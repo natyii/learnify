@@ -1,92 +1,68 @@
-import { serverSupabase } from "./supabase/server";
+// src/core/textbooks.ts
+import { serverSupabase } from "@/core/supabase/server";
+import { toStorageKey } from "@/core/storage/keys";
 
-export type AnyBook = Record<string, any>;
+export type TextbookRow = {
+  id: string;
+  grade: number;
+  subject: string;
+  title: string;
+  file_url: string | null;
+};
 
-export async function getTextbooksByGrade(grade: number) {
+export type ProfileRow = {
+  user_id: string;
+  grade: string | null;
+};
+
+const BUCKET = process.env.SUPABASE_BUCKET || "textbooks";
+
+/** Get current user and their profile grade (number). Throws if no user. */
+export async function getCurrentUserAndGrade(): Promise<{ userId: string; grade: number }> {
+  const supabase = await serverSupabase();
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) throw new Error("AUTH_REQUIRED");
+
+  const user = userRes.user;
+  const { data: profile, error: pErr } = await supabase
+    .from("profiles")
+    .select("user_id, grade")
+    .eq("user_id", user.id)
+    .maybeSingle<ProfileRow>();
+
+  if (pErr) throw pErr;
+  const gradeNum = Number((profile?.grade ?? "").toString().trim()) || NaN;
+  if (!Number.isFinite(gradeNum)) throw new Error("NO_GRADE_IN_PROFILE");
+
+  return { userId: user.id, grade: gradeNum };
+}
+
+/** Fetch textbooks by grade from DB. */
+export async function getTextbooksByGrade(grade: number): Promise<TextbookRow[]> {
   const supabase = await serverSupabase();
   const { data, error } = await supabase
     .from("textbooks")
-    .select("*")
+    .select("id, grade, subject, title, file_url")
+    .eq("grade", grade)
+    .order("subject", { ascending: true })
+    .order("title", { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as TextbookRow[];
+}
+
+/** Distinct subjects for a grade (normalized to lower-case). */
+export async function getSubjectsByGrade(grade: number): Promise<string[]> {
+  const supabase = await serverSupabase();
+  const { data, error } = await supabase
+    .from("textbooks")
+    .select("subject")
     .eq("grade", grade);
-  if (error) throw error;
-  const rows = (data ?? []) as AnyBook[];
-
-  const pick = (r: AnyBook, keys: string[]) => {
-    for (const k of keys) {
-      const v = r[k];
-      if (v !== undefined && v !== null && String(v).trim() !== "") return String(v);
-    }
-    return null;
-  };
-
-  return rows.map((r) => {
-    const subject = pick(r, ["subject","subj","category"]) || "";
-    const title   = pick(r, ["title","name","book_title"]) || "";
-
-    // Paths we can sign (relative path or full Supabase URL)
-    const storagePath =
-      pick(r, ["file_url","file_path","path","storage_path","storagePath","filePath","pdf_path","pdf"]) ||
-      (r.url && !/^https?:\/\//i.test(String(r.url)) ? String(r.url) : null);
-
-    // Absolute HTTP(s) URL (if already public; we’ll open directly)
-    const httpUrl = (() => {
-      const candidate = pick(r, ["url","http_url","public_url"]);
-      return candidate && /^https?:\/\//i.test(candidate) ? candidate : null;
-    })();
-
-    return {
-      id: pick(r, ["id","uuid"]) ?? `${subject}-${title}`,
-      subject,
-      title,
-      storagePath,
-      httpUrl,
-    };
-  }).sort((a,b)=>
-    (a.subject||"").localeCompare(b.subject||"") ||
-    (a.title||"").localeCompare(b.title||"")
-  );
-}
-
-// Parse either a bucket-relative path OR a full Supabase object URL.
-// Returns { bucket, key } to sign.
-function resolveBucketAndKey(input: string, envBucket: string) {
-  let bucket = envBucket;
-  let key = input.replace(/^\/+/, "");
-
-  // Full Supabase object URL?
-  // e.g. https://<proj>.supabase.co/storage/v1/object/public/textbooks/grade-12/math/foo.pdf
-  const m = key.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+)$/i);
-  if (m) {
-    bucket = m[1];
-    key = m[2];
-    return { bucket, key };
-  }
-
-  // If user mistakenly stored "bucket/path", strip the bucket prefix
-  const bucketPrefix = `${bucket}/`;
-  if (key.startsWith(bucketPrefix)) key = key.slice(bucketPrefix.length);
-
-  return { bucket, key };
-}
-
-export async function signedPdfUrl(inputPath: string, expiresSec = 3600) {
-  const supabase = await serverSupabase();
-  const { bucket, key } = resolveBucketAndKey(String(inputPath), process.env.SUPABASE_BUCKET!);
-
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(key, expiresSec);
 
   if (error) throw error;
-  return data.signedUrl;
-}
-
-export type Snippet = { page_number: number; content: string; };
-export async function searchTextbookPages(grade: number, subject: string, query: string, limit = 5) {
-  const supabase = await serverSupabase();
-  const { data, error } = await supabase.rpc("search_textbook_pages", {
-    p_grade: grade, p_subject: subject, p_query: query, p_limit: limit,
+  const set = new Set<string>();
+  (data || []).forEach((r: any) => {
+    if (r?.subject) set.add(String(r.subject).toLowerCase());
   });
-  if (error) throw error;
-  return (data ?? []) as Snippet[];
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }

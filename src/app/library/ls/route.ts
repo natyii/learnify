@@ -1,22 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { serverSupabase } from "@/core/supabase/server";
 
-export async function GET(req: NextRequest) {
-  try {
-    const bucket = process.env.SUPABASE_BUCKET!;
-    const { searchParams } = new URL(req.url);
-    let prefix = searchParams.get("prefix") || "";
-    prefix = prefix.replace(/^\/+/, "");
-    if (prefix.startsWith(bucket + "/")) prefix = prefix.slice(bucket.length + 1);
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const prefix = String(url.searchParams.get("prefix") || "");
+  const bucket = process.env.SUPABASE_BUCKET || "textbooks";
 
-    const supabase = await serverSupabase();
-    const { data, error } = await supabase.storage.from(bucket).list(prefix, {
-      limit: 200,
-      sortBy: { column: "name", order: "asc" },
-    });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ bucket, prefix, entries: data }, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "unknown" }, { status: 500 });
-  }
+  const supabase = await serverSupabase();
+  const { data, error } = await supabase.storage.from(bucket).list(prefix, {
+    limit: 100,
+    sortBy: { column: "name", order: "asc" },
+  });
+
+  return NextResponse.json({
+    bucket,
+    prefix,
+    entries: data || [],
+    error: error ? { message: error.message, name: error.name } : null,
+  });
 }

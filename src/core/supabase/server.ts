@@ -1,9 +1,13 @@
 import { cookies } from "next/headers";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createServerClient, type CookieOptions, type SupabaseClient } from "@supabase/ssr";
 
+/**
+ * Next 15: cookies() is async and MUST be awaited.
+ * Return a Supabase client wired to server cookies for auth/session.
+ */
 export async function serverSupabase(): Promise<SupabaseClient> {
-  const c = await cookies();
+  const c = await cookies(); // <-- important in Next 15
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -14,18 +18,10 @@ export async function serverSupabase(): Promise<SupabaseClient> {
           c.set({ name, value, ...options });
         },
         remove: (name: string, options: CookieOptions) => {
+          // delete by expiring
           c.set({ name, value: "", ...options, expires: new Date(0) });
         },
       },
     }
-  );
-}
-
-export async function adminSupabase(): Promise<SupabaseClient> {
-  const _ = await cookies(); // keep API parity; we don't use cookie storage here
-  return createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { get() { return undefined; }, set() {}, remove() {} } }
   );
 }

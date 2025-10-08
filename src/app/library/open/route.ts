@@ -1,17 +1,18 @@
-import { NextRequest } from "next/server";
-import { signedPdfUrl } from "@/core/textbooks";
-import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
+import { signTextbookUrl } from "@/core/storage/sign";
+import { toStorageKey } from "@/core/storage/keys";
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const path = searchParams.get("path");
-  if (!path) {
-    return new Response("Missing path", { status: 400 });
-  }
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const raw = url.searchParams.get("key") || "";
   try {
-    const url = await signedPdfUrl(path);
-    redirect(url); // 307 to signed URL
+    const key = toStorageKey(raw);
+    if (!key) {
+      return new NextResponse("Bad request: missing ?key", { status: 400 });
+    }
+    const signed = await signTextbookUrl(key, { expiresIn: 60 * 10 });
+    return NextResponse.redirect(signed, 302);
   } catch (e: any) {
-    return new Response("Failed to sign URL: " + (e?.message ?? "unknown"), { status: 500 });
+    return new NextResponse(`Failed to sign URL: ${e.message || e}`, { status: 404 });
   }
 }

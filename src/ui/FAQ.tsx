@@ -1,14 +1,23 @@
+import { PaperCard } from "./PaperCard";
+
 export function FAQItem({ q, a }: { q: string; a: string }) {
   return (
-    <details className="group rounded-xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-md">
-      <summary className="cursor-pointer list-none">
-        <div className="flex items-center justify-between">
-          <h4 className="font-medium">{q}</h4>
-          <span className="ml-4 text-sm text-[var(--muted)] group-open:hidden">+</span>
-          <span className="ml-4 text-sm text-[var(--muted)] hidden group-open:inline">−</span>
-        </div>
+    <details className="group">
+      <summary className="list-none">
+        <PaperCard className="cursor-pointer">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[15px] font-semibold text-black/80">{q}</h3>
+            <span className="rounded-md border border-black/10 bg-white/70 px-2 py-0.5 text-xs text-black/60">
+              +
+            </span>
+          </div>
+        </PaperCard>
       </summary>
-      <p className="mt-3 text-sm text-[var(--muted)]">{a}</p>
+      <div className="mt-2">
+        <PaperCard>
+          <p className="text-[15px] text-black/75">{a}</p>
+        </PaperCard>
+      </div>
     </details>
   );
 }
