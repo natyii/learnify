@@ -1,16 +1,17 @@
 // src/lib/supabaseServer.ts
-// Shim to keep older imports working in API routes.
-// It forwards to our Next 15-safe helper.
-
 import { getServerSupabase } from "@/core/supabase/server";
 
+/** Old code imports { createClient } from "@/lib/supabaseServer" */
 export function createClient() {
   return getServerSupabase();
 }
 
-// Optional helper other files might use
+/** Some files import { server } from "@/lib/supabaseServer" */
+export const server = getServerSupabase;
+
+/** Some files import { getAuthUser } from "@/lib/supabaseServer" */
 export async function getAuthUser() {
-  const supabase = getServerSupabase();
+  const supabase = await getServerSupabase();
   const { data } = await supabase.auth.getUser();
   return data.user ?? null;
 }

@@ -3,29 +3,36 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 /**
- * Next 15-compatible server client that works with async cookies().
+ * Create a server-side Supabase client using Next.js cookies.
+ * Works on Vercel + Next 15.
  */
-export function getServerSupabase() {
-  const store = cookies(); // Promise<ReadonlyRequestCookies> in Next 15
+export async function getServerSupabase() {
+  const cookieStore = cookies();
 
-  return createServerClient(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: async (name: string) => (await store).get(name)?.value,
-        getAll: async () =>
-          (await store).getAll().map((c) => ({ name: c.name, value: c.value })),
-        set: async (name: string, value: string, options?: any) =>
-          (await store).set({ name, value, ...(options || {}) }),
-        remove: async (name: string, options?: any) =>
-          (await store).set({
-            name,
-            value: "",
-            ...(options || {}),
-            expires: new Date(0),
-          }),
+        // Required by @supabase/ssr in Next 13+ App Router
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set({ name, value, ...options })
+            );
+          } catch {
+            // ignore set errors during SSR
+          }
+        },
       },
     }
   );
+
+  return supabase;
 }
+
+/** Backwards-compatible alias expected by existing imports. */
+export const serverSupabase = getServerSupabase;
