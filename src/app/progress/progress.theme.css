@@ -1,0 +1,131 @@
+/* ==========================================================================
+   Progress Page Theme — “Notebook / Techy”
+   Production-ready
+   ========================================================================== */
+
+#progress-root {
+  /* Core palette (tuned for contrast on your paper bg) */
+  --ink: #0b1220;               /* primary text */
+  --muted: #334155;             /* secondary text */
+  --subtle: #475569;            /* legends / helper text */
+  --panel: rgba(255,255,255,0.78);
+  --panel-border: rgba(0,0,0,0.10);
+
+  --accent-1: #615BDB;          /* indigo/violet gradient start */
+  --accent-2: #06B6D4;          /* cyan gradient end */
+
+  position: relative;
+  min-height: 100%;
+  color: var(--ink);
+  isolation: isolate;
+
+  /* Paper backdrop (matches Study/Library feel) */
+  background:
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,.06) 1px, transparent 1.5px) 0 0/18px 18px,
+    repeating-linear-gradient(to bottom, transparent 0 28px, rgba(0,84,201,.18) 28px 29px),
+    linear-gradient(90deg, rgba(255,59,48,.22) 72px, transparent 72px),
+    linear-gradient(#f7f4ee,#f2efe7);
+}
+
+/* Panels (your cards & chart containers already have bg-white/70 + ring)
+   We just ensure consistent border radius & subtle shadow across browsers */
+#progress-root .rounded-2xl {
+  background: var(--panel) !important;
+  border: 1px solid var(--panel-border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.06) !important;
+}
+
+/* Headings */
+#progress-root h1 {
+  /* gradient text is already applied via Tailwind in JSX; ensure the base color when gradient not supported */
+  color: var(--ink);
+}
+#progress-root h3 {
+  color: var(--ink);
+}
+
+/* Fix low-contrast utility text colors (override Tailwind’s slate-5/6/7) */
+#progress-root .text-slate-500 { color: rgba(51,65,85,0.85) !important; }  /* darker */
+#progress-root .text-slate-600 { color: rgba(30,41,59,0.95) !important; }
+#progress-root .text-slate-700 { color: #0b1220 !important; }
+
+/* KPI captions & small labels */
+#progress-root .uppercase.tracking-wide { color: var(--muted) !important; }
+
+/* Donut chart center label + any SVG labels */
+#progress-root svg text { fill: var(--ink) !important; }
+
+/* Donut legend dots (the small colored bullets) */
+#progress-root .legend-dot,
+#progress-root .bg-indigo-600 { background-color: var(--accent-1) !important; }
+
+/* Line chart grid lines: soften just a touch for readability */
+#progress-root svg .stroke-black\/10,
+#progress-root line.stroke-black\/10 {
+  stroke: rgba(2,6,23,0.12) !important;
+}
+
+/* Bars gradient (ensure smooth modern blend even if Tailwind class differs) */
+#progress-root .bar-gradient {
+  background-image: linear-gradient(to bottom, rgba(97,91,219,.85), rgba(6,182,212,.85)) !important;
+}
+
+/* Buttons at the bottom (Study / Take a Quiz) */
+#progress-root a[href^="/study"],
+#progress-root a[href^="/quiz"] {
+  color: white !important;
+  text-decoration: none !important;
+  box-shadow: 0 8px 22px rgba(2,6,23,0.12);
+}
+
+/* Strengths / Needs Work lists: ensure strong contrast */
+#progress-root section ul li span { color: var(--ink) !important; }
+#progress-root section ul li span.font-semibold { color: var(--ink) !important; }
+
+/* Mobile spacing niceties */
+@media (max-width: 640px) {
+  #progress-root { padding-bottom: 64px; }
+}
+/* === Visibility Fixes =================================================== */
+
+/* Strengths / Needs Work titles */
+#progress-root h4,
+#progress-root .text-indigo-500,
+#progress-root .text-blue-500 {
+  color: #0b1220 !important;        /* dark ink */
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+/* Percentages inside strengths/needs boxes */
+#progress-root .text-blue-400,
+#progress-root .text-indigo-400,
+#progress-root .text-slate-400 {
+  color: #1e293b !important;        /* readable slate */
+  font-weight: 600 !important;
+}
+
+/* Bottom buttons “Study” / “Take a Quiz” */
+#progress-root a[href^="/study"],
+#progress-root a[href^="/quiz"] {
+  background: linear-gradient(90deg,#615BDB,#06B6D4) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  padding: 0.6rem 1.4rem !important;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.15);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+#progress-root a[href^="/study"]:hover,
+#progress-root a[href^="/quiz"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(2,6,23,0.25);
+}
+
+/* Light legends & small labels under charts */
+#progress-root .text-slate-500,
+#progress-root .text-slate-400 {
+  color: #334155 !important;
+  opacity: 1 !important;
+}

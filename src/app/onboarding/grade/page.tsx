@@ -1,61 +1,81 @@
 // src/app/onboarding/grade/page.tsx
-import { serverSupabase } from "@/core/supabase/server";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const sp = await searchParams;
-  const next = typeof sp.next === "string" ? sp.next : "/app";
-  const err = typeof sp.error === "string" ? decodeURIComponent(sp.error) : "";
+// Server action to set the user's grade once and redirect to app
+async function setGradeAction(formData: FormData) {
+  "use server";
 
-  async function save(fd: FormData) {
-    "use server";
-    const grade = Number(fd.get("grade"));
-    const n = String(fd.get("next") || "/app");
-    if (!Number.isFinite(grade) || grade < 1 || grade > 12) {
-      redirect(`/onboarding/grade?next=${encodeURIComponent(n)}&error=${encodeURIComponent("Select a grade 1–12.")}`);
-    }
-
-    const supabase = await serverSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) redirect(`/sign-in?next=${encodeURIComponent("/onboarding/grade")}`);
-
-    // Upsert profile
-    const { error } = await supabase.from("profiles").upsert(
-      { user_id: user.id, grade: String(grade) },
-      { onConflict: "user_id" }
-    );
-
-    if (error) {
-      redirect(`/onboarding/grade?next=${encodeURIComponent(n)}&error=${encodeURIComponent(error.message)}`);
-    }
-    redirect(n);
+  const grade = Number(String(formData.get("grade") || "").trim());
+  if (!grade || grade < 1 || grade > 12) {
+    redirect("/onboarding/grade?error=Pick%20a%20grade");
   }
 
+  // Supabase server client with cookie adapter
+  const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const c = cookies();
+  const supabase = createServerClient(URL, KEY, {
+    cookies: {
+      get: (name: string) => c.get(name)?.value,
+      set: (name: string, value: string, options: CookieOptions) =>
+        c.set({ name, value, ...(options || {}) }),
+      remove: (name: string, options: CookieOptions) =>
+        c.set({ name, value: "", ...(options || {}), expires: new Date(0) }),
+    },
+  });
+
+  const { data: session } = await supabase.auth.getUser();
+  const userId = session?.user?.id;
+  if (!userId) redirect("/sign-in?next=/onboarding/grade");
+
+  // Upsert grade into profiles (idempotent)
+  await supabase
+    .from("profiles")
+    .upsert({ user_id: userId, grade, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+
+  redirect("/app");
+}
+
+export default async function OnboardGrade() {
   return (
-    <main className="min-h-[100svh] grid place-items-center px-6">
-      <form action={save} className="w-full max-w-sm space-y-4 rounded-xl border border-white/10 bg-white/[0.03] p-6">
-        <h1 className="text-xl font-semibold">Choose your grade</h1>
+    <main className="mx-auto max-w-md px-6 py-10">
+      <h1 className="mb-2 text-2xl font-semibold text-black">Set your grade</h1>
+      <p className="mb-6 text-sm text-black/70">
+        Choose your grade once so Study and Library match your curriculum.
+      </p>
 
-        {err ? <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm">{err}</div> : null}
-
-        <label className="block text-sm">
-          <span className="mb-1 block text-[var(--muted)]">Grade (1–12)</span>
-          <select name="grade" defaultValue="" required className="w-full rounded-md border border-white/10 bg-black/30 p-2 focus:ring-2 focus:ring-emerald-300/40">
-            <option value="" disabled>Select grade</option>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map(g => (
-              <option key={g} value={g}>{g}</option>
+      <form action={setGradeAction} className="space-y-4">
+        <label className="block text-sm font-medium text-black/80">
+          Your grade
+          <select
+            name="grade"
+            className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-black"
+            defaultValue=""
+            required
+          >
+            <option value="" disabled>
+              Select grade
+            </option>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((g) => (
+              <option key={g} value={g}>
+                Grade {g}
+              </option>
             ))}
           </select>
         </label>
 
-        <input type="hidden" name="next" value={next} />
-        <button className="w-full rounded-md bg-emerald-400 py-2 font-medium text-slate-900 hover:bg-emerald-300">
-          Continue
+        <button
+          type="submit"
+          className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-white font-semibold"
+        >
+          Save grade
         </button>
+
+        <div className="text-xs text-black/60 mt-2">
+          You can change this later from your profile.
+        </div>
       </form>
     </main>
   );

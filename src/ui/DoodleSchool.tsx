@@ -1,76 +1,134 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
 /**
- * Server-safe animated doodles that blend with a dark/nebula hero.
- * Uses Tailwind + custom keyframes defined in globals.css (step 2).
- * No 'use client', no styled-jsx, no SMIL — works everywhere.
+ * DoodleSchool
+ * - tasteful, GPU-accelerated parallax doodles
+ * - very light on CPU; no external libs
+ * - respects reduced motion
  */
 export default function DoodleSchool() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReduced) {
+      root.style.opacity = "0.3";
+      return;
+    }
+
+    let t = 0;
+    const loop = () => {
+      t += 0.008;
+
+      // subtle orbital motion
+      const items = root.querySelectorAll<HTMLElement>("[data-doodle]");
+      items.forEach((el, i) => {
+        const speed = 0.4 + (i % 5) * 0.12;
+        const rX = 6 + (i % 7);
+        const rY = 8 + ((i + 3) % 7);
+
+        const x = Math.sin(t * speed + i) * rX;
+        const y = Math.cos(t * speed + i) * rY;
+
+        // tiny hover/float
+        el.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${(Math.sin(t*speed + i)*2).toFixed(2)}deg)`;
+      });
+
+      rafRef.current = requestAnimationFrame(loop);
+    };
+
+    rafRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
   return (
     <div
-      aria-hidden
+      ref={rootRef}
+      aria-hidden="true"
       className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
     >
-      {/* Notebook, floating left */}
+      {/* left halo */}
+      <div className="absolute -left-40 top-10 h-[42rem] w-[42rem] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.25),transparent_60%)] blur-2xl" />
+      {/* top halo */}
+      <div className="absolute left-1/3 -top-24 h-[36rem] w-[36rem] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.28),transparent_60%)] blur-2xl" />
+      {/* right halo */}
+      <div className="absolute -right-48 top-24 h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.24),transparent_60%)] blur-2xl" />
+
+      {/* DOODLES — thin-stroke, school-themed */}
       <svg
-        viewBox="0 0 120 120"
-        className="absolute left-[4%] top-[120px] h-28 w-28 opacity-25 animate-float-slow"
+        className="absolute left-8 top-28 h-24 w-24 text-white/35"
+        data-doodle
+        viewBox="0 0 64 64"
         fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
       >
-        <rect x="14" y="18" width="86" height="84" rx="12" className="fill-white/5" />
-        <rect x="14" y="18" width="86" height="84" rx="12" className="stroke-white/60" strokeWidth="2" />
-        <line x1="28" y1="32" x2="92" y2="32" className="stroke-white/60" strokeWidth="2" />
-        <line x1="28" y1="48" x2="92" y2="48" className="stroke-white/60" strokeWidth="2" />
-        <line x1="28" y1="64" x2="92" y2="64" className="stroke-white/60" strokeWidth="2" />
+        {/* notebook */}
+        <rect x="10" y="8" width="44" height="48" rx="6" />
+        <path d="M18 16h28M18 22h28M18 28h28M18 34h18" />
       </svg>
 
-      {/* Pencil, gentle drift near the headline */}
       <svg
-        viewBox="0 0 200 80"
-        className="absolute right-[6%] top-[110px] h-24 w-40 opacity-30 animate-drift-x"
+        className="absolute right-10 top-32 h-24 w-24 text-white/30"
+        data-doodle
+        viewBox="0 0 64 64"
         fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
       >
-        <rect x="20" y="30" width="120" height="12" rx="6" className="fill-white/5 stroke-white/60" strokeWidth="2" />
-        <polygon points="140,30 176,40 140,42" className="fill-white/5 stroke-white/60" strokeWidth="2" />
-        <circle cx="182" cy="40" r="6" className="stroke-white/60" strokeWidth="2" />
+        {/* pencil */}
+        <path d="M10 50l8 4 4-8L52 16c2-2 2-6 0-8s-6-2-8 0L14 46l-4 8z" />
       </svg>
 
-      {/* Ruler, bottom-right of hero */}
       <svg
-        viewBox="0 0 120 120"
-        className="absolute right-[10%] top-[360px] h-28 w-28 opacity-25 animate-float-slower"
+        className="absolute bottom-28 left-1/2 h-24 w-24 -translate-x-1/2 text-white/25"
+        data-doodle
+        viewBox="0 0 64 64"
         fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
       >
-        <rect x="20" y="22" width="80" height="20" rx="6" className="fill-white/5 stroke-white/60" strokeWidth="2" />
-        {Array.from({ length: 8 }).map((_, i) => (
-          <line
-            key={i}
-            x1={26 + i * 9}
-            y1="26"
-            x2={26 + i * 9}
-            y2={i % 2 ? 38 : 34}
-            className="stroke-white/60"
-            strokeWidth="2"
-          />
-        ))}
+        {/* ruler */}
+        <rect x="6" y="26" width="52" height="12" rx="3" />
+        <path d="M12 26v12M20 26v12M28 26v12M36 26v12M44 26v12M52 26v12" />
       </svg>
 
-      {/* Backpack, faint behind the stat row */}
       <svg
-        viewBox="0 0 120 120"
-        className="absolute left-[10%] top-[520px] h-28 w-28 opacity-20 animate-float-slowest"
+        className="absolute bottom-16 left-10 h-24 w-24 text-white/28"
+        data-doodle
+        viewBox="0 0 64 64"
         fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
       >
-        <rect x="30" y="40" width="60" height="56" rx="12" className="fill-white/5 stroke-white/60" strokeWidth="2" />
-        <rect x="40" y="32" width="40" height="16" rx="8" className="stroke-white/60" strokeWidth="2" />
-        <rect x="44" y="66" width="32" height="16" rx="6" className="stroke-white/60" strokeWidth="2" />
+        {/* backpack */}
+        <rect x="14" y="22" width="36" height="28" rx="8" />
+        <path d="M22 26v-2a10 10 0 0120 0v2M22 36h20" />
       </svg>
 
-      {/* Tiny bits: paper clips / confetti lines for parallax-ish depth */}
-      <div className="absolute inset-0 animate-slow-parallax">
-        <div className="absolute left-[30%] top-[18%] h-1 w-8 rounded-full bg-white/20 rotate-6" />
-        <div className="absolute right-[22%] top-[28%] h-1 w-10 rounded-full bg-white/15 -rotate-12" />
-        <div className="absolute right-[18%] top-[44%] h-1 w-6 rounded-full bg-white/15 rotate-3" />
-        <div className="absolute left-[14%] top-[40%] h-1 w-12 rounded-full bg-white/15 -rotate-3" />
-      </div>
+      <svg
+        className="absolute right-24 bottom-24 h-24 w-24 text-white/28"
+        data-doodle
+        viewBox="0 0 64 64"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        {/* compass */}
+        <path d="M32 6v14M20 58l12-24 12 24M14 40a18 18 0 1136 0" />
+      </svg>
     </div>
   );
 }

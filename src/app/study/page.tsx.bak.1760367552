@@ -1,0 +1,125 @@
+// src/app/study/page.tsx
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import NotebookPaper from "../../ui/NotebookPaper";
+import StudyChat from "../../ui/StudyChat";
+import { getUserGrade, getTextbooksByGrade } from "../../core/textbooks";
+import { SubjectChip } from "../../ui/SubjectIcon";
+
+const DEFAULT_SUBJECT = "chemistry";
+
+export const dynamic = "force-dynamic";
+
+export default async function StudyIndexPage() {
+  // Hard gate: if no grade in profile, send to onboarding
+  const grade = await getUserGrade();
+  if (!grade) redirect("/onboarding/grade");
+
+  const textbooks = await getTextbooksByGrade(grade);
+
+  const subjects = Array.from(
+    new Set(textbooks.map((t: any) => (t.subject || "").toLowerCase()))
+  ).sort();
+
+  const subjectKey = subjects.includes(DEFAULT_SUBJECT)
+    ? DEFAULT_SUBJECT
+    : subjects[0] || "general";
+
+  const activeBook =
+    textbooks.find((t: any) => (t.subject || "").toLowerCase() === subjectKey) || null;
+
+  return (
+    <NotebookPaper>
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        {/* HERO */}
+        <div className="rounded-2xl border border-zinc-300/60 bg-white/65 backdrop-blur p-6 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold !text-zinc-900">
+                {capitalize(subjectKey)} study workspace
+              </h1>
+              <p className="text-sm !text-zinc-700 mt-1">
+                The assistant is tuned for {subjectKey} — use quick actions or ask anything.
+              </p>
+            </div>
+            <div className="text-xs rounded-full border px-3 py-1 !text-zinc-800 bg-white/80">
+              Grade {grade}
+            </div>
+          </div>
+
+          {/* subject chips */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {subjects.map((s) => (
+              <SubjectChip
+                key={s}
+                label={s}
+                href={`/study/${encodeURIComponent(s)}`}
+                active={s === subjectKey}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <Suspense>
+            <StudyChat
+              subjectKey={subjectKey}
+              grade={grade}
+              bookId={activeBook?.id ?? null}
+              bookTitle={activeBook?.title ?? null}
+            />
+          </Suspense>
+        </div>
+      </div>
+    </NotebookPaper>
+  );
+}
+
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+// src/app/study/page.tsx
+import { Suspense } from "react";
+import StudyChat from "@/src/ui/StudyChat";
+import { getUserGrade, getTextbooksByGrade } from "@/src/core/textbooks";
+import "./contrast.css";
+
+const DEFAULT_SUBJECT = "chemistry";
+
+export default async function StudyIndexPage() {
+  const grade = await getUserGrade();
+  const books = await getTextbooksByGrade(grade);
+  const firstChem =
+    books.find((b) => (b.subject || "").toLowerCase() === DEFAULT_SUBJECT) || null;
+
+  return (
+    <div id="study-root" className="px-3 sm:px-6 py-4">
+      {/* header card stays exactly the same look; we only affect text/readability below */}
+      <section className="rounded-2xl border border-zinc-200/70 bg-white/80 shadow-sm p-4 sm:p-6">
+        <div className="flex items-start">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-zinc-900">
+            Chemistry study workspace
+          </h1>
+          <span className="ml-auto text-sm rounded-full border px-3 py-1 text-zinc-700">
+            Grade {grade}
+          </span>
+        </div>
+
+        {/* subject chips are your existing component(s) */}
+        <div className="mt-4 opacity-100">{/* keep your subject chips */}</div>
+      </section>
+
+      {/* Chat + side card */}
+      <div className="mt-4">
+        <Suspense fallback={<div className="text-zinc-700">Loading…</div>}>
+          <StudyChat
+            subjectKey={DEFAULT_SUBJECT}
+            grade={grade}
+            bookId={firstChem?.id ?? null}
+            bookTitle={firstChem?.title ?? null}
+          />
+        </Suspense>
+      </div>
+    </div>
+  );
+}

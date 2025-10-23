@@ -1,90 +1,111 @@
-import { requireUser } from "@/core/auth";
-import { getProfile } from "@/core/profile";
-import { getTextbooksByGrade } from "@/core/textbooks";
+// Server Component
 import Link from "next/link";
+import { serverSupabase } from "@/core/supabase/server";
+import s from "./library.theme.module.css"; // CSS Module import
 
-export default async function Page() {
-  const user = await requireUser();
-  const profile = await getProfile(user.id);
-  const grade = Number(profile?.grade ?? 0);
+// If you already have stronger typing, keep yours.
+type TextbookRow = {
+  id: string;
+  title: string;
+  subject: string;
+  grade: number | null;
+  storage_path: string | null; // used by API route; may be null for some rows
+};
 
-  if (!grade) {
-    return (
-      <main className="min-h-screen p-6 max-w-3xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-2">Library</h1>
-        <p className="text-[var(--muted)]">
-          Your grade is missing. Go to <a className="underline" href="/app">/app</a> and set a grade.
-        </p>
-      </main>
-    );
-  }
+async function getUserGrade() {
+  const supabase = await serverSupabase();
+  const { data: userRes } = await supabase.auth.getUser();
+  const userId = userRes?.user?.id;
+  if (!userId) return null;
 
-  let textbooks: Awaited<ReturnType<typeof getTextbooksByGrade>>;
-  try {
-    textbooks = await getTextbooksByGrade(grade);
-  } catch (e: any) {
-    return (
-      <main className="min-h-screen p-6 max-w-3xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-2">Library</h1>
-        <div className="rounded-xl p-4 bg-[var(--card)] border border-white/10">
-          <p className="text-red-300 font-mono text-sm break-all">
-            Failed to load textbooks: {e?.message ?? "unknown error"}
-          </p>
-        </div>
-      </main>
-    );
-  }
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("grade")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  return (profile?.grade ?? null) as number | null;
+}
+
+async function getTextbooksByGrade(grade: number | null) {
+  const supabase = await serverSupabase();
+
+  // If grade is null, show nothing rather than throw.
+  if (grade === null) return [] as TextbookRow[];
+
+  const { data } = await supabase
+    .from("textbooks")
+    .select("id, title, subject, grade, storage_path")
+    .eq("grade", grade)
+    .order("subject", { ascending: true })
+    .order("title", { ascending: true });
+
+  return (data ?? []) as TextbookRow[];
+}
+
+export default async function LibraryPage() {
+  const grade = await getUserGrade();
+  const books = await getTextbooksByGrade(grade);
 
   return (
-    <main className="min-h-screen p-6 max-w-5xl mx-auto">
-      <div className="flex items-end justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-semibold">Library</h1>
-          <p className="text-[var(--muted)]">Grade {grade} textbooks</p>
-        </div>
-      </div>
+    // Full-width theme wrapper so the parchment + lines fill the page
+    <div className={s.libraryTheme}>
+      <section className="mx-auto max-w-5xl px-4 py-8">
+        <header className="mb-6">
+          <h1 className={`${s.libraryTitle} text-2xl font-semibold`}>Library</h1>
+          <p className="text-sm text-muted-foreground">
+            {grade === null
+              ? "No grade set on your profile."
+              : `Showing textbooks for Grade ${grade}.`}
+          </p>
+        </header>
 
-      {textbooks.length === 0 ? (
-        <div className="rounded-xl p-6 bg-[var(--card)] border border-white/10">
-          <p>No textbooks found for grade {grade}.</p>
-        </div>
-      ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {textbooks.map(tb => {
-            const canSign = !!tb.storagePath;
-            const canHttp = !!tb.httpUrl;
-            return (
-              <li key={String(tb.id)} className="rounded-xl border border-white/10 bg-[var(--card)] p-4">
-                <div className="mb-3">
-                  <p className="text-xs uppercase tracking-wide text-[var(--muted)]">{tb.subject || "—"}</p>
-                  <h3 className="text-lg font-semibold leading-snug">{tb.title || "Untitled"}</h3>
+        {grade === null ? (
+          <div className="rounded-lg border p-4 text-sm">
+            Update your profile grade to see textbooks.
+          </div>
+        ) : books.length === 0 ? (
+          <div className="rounded-lg border p-4 text-sm">
+            No textbooks found for Grade {grade}.
+          </div>
+        ) : (
+          <ul className={`space-y-3 ${s.libraryList}`}>
+            {books.map((book) => (
+              <li
+                key={book.id}
+                className={`${s.libraryCard} flex items-center justify-between gap-4 rounded-lg border p-4`}
+              >
+                <div className="min-w-0">
+                  <div className="text-sm text-muted-foreground">
+                    {book.subject}
+                  </div>
+                  <div className="truncate font-medium">{book.title}</div>
                 </div>
-                <div className="flex gap-2">
-                  {canSign ? (
-                    <Link
-                      className="flex-1 text-center rounded-md px-3 py-2 bg-[var(--accent)] text-white"
-                      href={`/library/open?path=${encodeURIComponent(tb.storagePath!)}`}
-                      target="_blank"
-                    >
-                      Open PDF
-                    </Link>
-                  ) : canHttp ? (
-                    <Link
-                      className="flex-1 text-center rounded-md px-3 py-2 bg-[var(--accent)] text-white"
-                      href={tb.httpUrl!}
-                      target="_blank"
-                    >
-                      Open
-                    </Link>
-                  ) : (
-                    <span className="text-[var(--muted)]">Unavailable</span>
-                  )}
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* OPEN PDF — hits the API route and opens a signed URL in a new tab */}
+                  <a
+                    href={`/api/textbooks/open?id=${book.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={s.btnPrimary}
+                  >
+                    Open PDF
+                  </a>
+
+                  {/* STUDY — outline style */}
+                  <Link
+                    href={`/study?subject=${encodeURIComponent(book.subject)}`}
+                    className={s.btnOutline}
+                  >
+                    Study
+                  </Link>
                 </div>
               </li>
-            );
-          })}
-        </ul>
-      )}
-    </main>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

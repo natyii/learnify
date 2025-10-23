@@ -1,0 +1,188 @@
+/* src/app/library/library.theme.module.css */
+
+.libraryTheme {
+  --ink: #0f172a;
+  --muted: #475569;
+  --panel: rgba(255, 255, 255, 0.78);
+  --panel-border: rgba(0, 0, 0, 0.1);
+  --violet-start: #615bdb;
+  --violet-end: #433389;
+  --accent-start: #1e3a8a;
+  --accent-end: #06b6d4;
+  position: relative;
+  min-height: 100%;
+  color: var(--ink);
+  isolation: isolate;
+  color-scheme: light;
+}
+
+.libraryTheme::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  background: linear-gradient(#f7f4ee, #f2efe7);
+}
+
+.libraryTheme::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  opacity: 0.55;
+  background:
+    radial-gradient(circle at 12px 12px, rgba(0, 0, 0, 0.06) 1px, transparent 1.5px) 0 0 / 40px 32px,
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 27px,
+      rgba(0, 0, 0, 0.06) 27px,
+      rgba(0, 0, 0, 0.06) 28px
+    );
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* ---------- HEADER TITLE ---------- */
+.libraryTitle {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  background: linear-gradient(180deg, var(--accent-start), var(--accent-end));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.libraryTitle::after {
+  content: "";
+  display: block;
+  height: 3px;
+  width: 160px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #60a5fa 0%, #22d3ee 100%);
+  opacity: 0.7;
+}
+
+/* ---------- LIST + CARDS ---------- */
+.libraryList {
+  display: grid;
+  gap: 14px;
+}
+
+.libraryCard {
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  transition: transform 0.14s, background-color 0.14s, box-shadow 0.14s, border-color 0.14s;
+}
+
+/* ✅ FORCE VISIBLE TEXT */
+.libraryCard * {
+  color: #1a1a1a !important; /* solid readable ink */
+  text-shadow: none !important;
+}
+.libraryCard small,
+.libraryCard .text-muted-foreground {
+  color: #374151 !important; /* slightly muted gray-blue for subtitle */
+}
+.libraryCard strong,
+.libraryCard .font-medium {
+  color: #0f172a !important; /* dark navy for title */
+  font-weight: 600 !important;
+}
+
+.libraryCard:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(67, 51, 137, 0.22);
+  box-shadow: 0 24px 70px rgba(67, 51, 137, 0.18);
+}
+
+/* ---------- BUTTONS ---------- */
+.btnPrimary {
+  display: inline-block;
+  border: 1px solid transparent;
+  color: #fff !important;
+  background: linear-gradient(180deg, var(--violet-start), var(--violet-end));
+  box-shadow: 0 8px 22px rgba(67, 51, 137, 0.3);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  transition: filter 0.12s, transform 0.12s;
+}
+.btnPrimary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-0.5px);
+}
+
+.btnOutline {
+  display: inline-block;
+  border: 1px solid color-mix(in oklab, var(--violet-start) 40%, transparent);
+  background: transparent;
+  color: #433389 !important;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: background-color 0.12s, transform 0.12s;
+}
+.btnOutline:hover {
+  background: color-mix(in oklab, var(--violet-start) 10%, transparent);
+  transform: translateY(-0.5px);
+}
+
+/* ---------- DARK MODE (kept but overridden later) ---------- */
+@media (prefers-color-scheme: dark) {
+  .libraryTheme {
+    --panel: rgba(255, 255, 255, 0.08);
+    --panel-border: rgba(255, 255, 255, 0.1);
+  }
+  .libraryTheme::before {
+    background: linear-gradient(#0b1220, #0a0f1a 30%, #0b1220);
+  }
+  .libraryTheme::after {
+    opacity: 0.35;
+    background:
+      radial-gradient(circle at 12px 12px, rgba(255, 255, 255, 0.1) 1px, transparent 1.5px) 0 0 / 40px 32px,
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 27px,
+        rgba(255, 255, 255, 0.1) 27px,
+        rgba(255, 255, 255, 0.1) 28px
+      );
+    mix-blend-mode: normal;
+  }
+  .libraryCard {
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .btnOutline {
+    color: #c7bfff !important;
+    border-color: color-mix(in oklab, var(--violet-start) 50%, transparent);
+  }
+}
+
+/* ---------- FORCE LIGHT OVERRIDE ---------- */
+.libraryTheme {
+  --panel: rgba(255, 255, 255, 0.78);
+  --panel-border: rgba(0, 0, 0, 0.1);
+}
+.libraryTheme::before {
+  background: linear-gradient(#f7f4ee, #f2efe7);
+}
+.libraryTheme::after {
+  opacity: 0.55;
+  background:
+    radial-gradient(circle at 12px 12px, rgba(0, 0, 0, 0.06) 1px, transparent 1.5px) 0 0 / 40px 32px,
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 27px,
+      rgba(0, 0, 0, 0.06) 27px,
+      rgba(0, 0, 0, 0.06) 28px
+    );
+  mix-blend-mode: multiply;
+}

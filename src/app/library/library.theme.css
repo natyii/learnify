@@ -1,0 +1,147 @@
+/* Library theme (scoped via CSS Module) */
+
+.libraryTheme {
+  --ink: #0f172a;
+  --muted: #475569;
+  --panel: rgba(255,255,255,0.78);
+  --panel-border: rgba(0,0,0,0.10);
+  --chip: rgba(255,255,255,0.70);
+  --violet-start: #615BDB;
+  --violet-end: #433389;
+  --accent-start: #1E3A8A;
+  --accent-end: #06B6D4;
+
+  position: relative;
+  min-height: 100%;
+  color: var(--ink);
+  isolation: isolate;
+}
+
+/* parchment */
+.libraryTheme::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  background: linear-gradient(#f7f4ee, #f2efe7);
+}
+
+/* notebook lines */
+.libraryTheme::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  opacity: .55;
+  background:
+    radial-gradient(circle at 12px 12px, rgba(0,0,0,0.06) 1px, transparent 1.5px) 0 0 / 40px 32px,
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 27px,
+      rgba(0,0,0,0.06) 27px,
+      rgba(0,0,0,0.06) 28px
+    );
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* heading */
+.libraryTitle {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  background: linear-gradient(180deg, var(--accent-start) 0%, var(--accent-end) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.libraryTitle::after {
+  content: "";
+  display: block;
+  height: 3px;
+  width: 160px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #60a5fa 0%, #22d3ee 100%);
+  opacity: .7;
+}
+
+/* list + cards */
+.libraryList { display: grid; gap: 14px; }
+
+.libraryCard {
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  transition: transform 140ms ease, background-color 140ms ease,
+              box-shadow 140ms ease, border-color 140ms ease;
+}
+.libraryCard:hover {
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.90);
+  border-color: rgba(67,51,137,0.22);
+  box-shadow: 0 24px 70px rgba(67,51,137,0.18);
+}
+
+/* buttons */
+.btnPrimary {
+  border: 1px solid transparent;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, var(--violet-start) 0%, var(--violet-end) 100%);
+  box-shadow: 0 8px 22px rgba(67,51,137,0.30);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  transition: filter 120ms ease, transform 120ms ease;
+}
+.btnPrimary:hover { filter: brightness(1.1); transform: translateY(-0.5px); }
+
+.btnOutline, .btnSecondary {
+  border: 1px solid color-mix(in oklab, var(--violet-start) 40%, transparent);
+  background: transparent;
+  color: #433389;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+.btnOutline:hover, .btnSecondary:hover {
+  background: color-mix(in oklab, var(--violet-start) 10%, transparent);
+  transform: translateY(-0.5px);
+}
+
+/* dark mode guard */
+@media (prefers-color-scheme: dark) {
+  .libraryTheme {
+    --panel: rgba(255,255,255,0.08);
+    --panel-border: rgba(255,255,255,0.10);
+    --chip: rgba(255,255,255,0.10);
+  }
+  .libraryTheme::before {
+    background: linear-gradient(#0b1220, #0a0f1a 30%, #0b1220);
+  }
+  .libraryTheme::after {
+    opacity: .35;
+    background:
+      radial-gradient(circle at 12px 12px, rgba(255,255,255,0.10) 1px, transparent 1.5px) 0 0 / 40px 32px,
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 27px,
+        rgba(255,255,255,0.10) 27px,
+        rgba(255,255,255,0.10) 28px
+      );
+    mix-blend-mode: normal;
+  }
+  .libraryCard {
+    box-shadow: 0 22px 60px rgba(0,0,0,0.45);
+    background: rgba(255,255,255,0.06);
+  }
+  .btnOutline, .btnSecondary {
+    color: #c7bfff;
+    border-color: color-mix(in oklab, var(--violet-start) 50%, transparent);
+  }
+}

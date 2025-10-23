@@ -1,20 +1,194 @@
 @import "tailwindcss";
 
-/* Design tokens (safe defaults) */
+/* -----------------------------------------------------------
+   Design tokens (dark-first, safe defaults)
+----------------------------------------------------------- */
 :root {
-  --bg: #0b1020;
-  --fg: #e7ecff;
-  --muted: #9aa4c7;
-  --card: #111836;
-  --accent: #3b82f6;
+  --bg: #0b1020;          /* app background */
+  --fg: #e7ecff;          /* primary text */
+  --muted: #9aa4c7;       /* secondary text */
+  --card: #111836;        /* solid card fallback */
+  --accent: #3b82f6;      /* link/focus accent */
+
+  --glass-a: 0.10;        /* glass surface alpha */
+  --glass-strong-a: 0.16; /* buttons etc */
+  --glass-border-a: 0.14; /* subtle borders */
 }
+
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
 }
-a { color: inherit; text-decoration: none; }
+
+/* Headings a touch stronger for readability */
+h1, h2, h3 { font-weight: 600; }
+h4, h5, h6 { font-weight: 500; }
+
+/* Selection */
+::selection {
+  background: color-mix(in oklab, var(--accent) 30%, transparent);
+  color: #fff;
+}
+
+/* -----------------------------------------------------------
+   Links: readable & accessible on dark
+----------------------------------------------------------- */
+a {
+  color: color-mix(in oklab, var(--accent) 85%, white 0%);
+  text-decoration: none;
+}
+a:hover { color: color-mix(in oklab, var(--accent) 100%, white 0%); }
+
+/* -----------------------------------------------------------
+   Scrollbar (WebKit) — subtle
+----------------------------------------------------------- */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.28);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.45); }
+
+/* -----------------------------------------------------------
+   “Glass” surfaces (safe overrides)
+   Your UI uses many bg-white/xx and border-white/xx utilities.
+   On a dark base they can become unreadable, so we gently
+   coerce them into dark glass with minimal !important usage.
+----------------------------------------------------------- */
+.rounded,
+.rounded-md,
+.rounded-lg,
+.rounded-xl,
+.rounded-2xl,
+.bg-white\/95,
+.bg-white\/90,
+.bg-white\/85,
+.bg-white\/80,
+.bg-white\/70,
+.bg-white\/60,
+.bg-white\/55,
+.bg-white\/50,
+.bg-white\/45,
+.bg-white\/40,
+.bg-white\/35,
+.bg-white\/30,
+.bg-white\/25,
+.bg-white\/20,
+.bg-white\/15,
+.bg-white\/12,
+.bg-white\/10,
+.bg-white\/5 {
+  background-color: color-mix(in oklab, white calc(var(--glass-a) * 100%), transparent) !important;
+  color: var(--fg) !important;
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  border: 1px solid color-mix(in oklab, white calc(var(--glass-border-a) * 100%), transparent) !important;
+}
+
+/* Common border utilities used in the app */
+.border,
+.border-white\/30,
+.border-white\/25,
+.border-white\/20,
+.border-white\/15,
+.border-white\/12,
+.border-white\/10,
+.border-black\/15,
+.border-black\/10 {
+  border-color: color-mix(in oklab, white calc(var(--glass-border-a) * 100%), transparent) !important;
+}
+
+/* Solid card option if you want a non-glass block */
+.card {
+  background: var(--card);
+  color: var(--fg);
+  border: 1px solid color-mix(in oklab, white 14%, transparent);
+  border-radius: 1rem;
+}
+
+/* -----------------------------------------------------------
+   Forms: inputs/selects/textareas (readable on dark)
+----------------------------------------------------------- */
+input,
+select,
+textarea {
+  background-color: color-mix(in oklab, white calc(var(--glass-a) * 100%), transparent);
+  border: 1px solid color-mix(in oklab, white calc(var(--glass-border-a) * 100%), transparent);
+  color: var(--fg);
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.8rem;
+}
+
+input::placeholder,
+textarea::placeholder { color: color-mix(in oklab, var(--muted) 60%, transparent); }
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible,
+a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 35%, transparent);
+  border-color: color-mix(in oklab, var(--accent) 85%, white 0%);
+  border-radius: 0.75rem;
+}
+
+/* Rounded pills frequently used in navbar/cta */
+.rounded-full.bg-white\/95,
+.rounded-full.bg-white\/90,
+.rounded-full.bg-white\/85,
+.rounded-full.bg-white\/80,
+.rounded-full.bg-white\/70 {
+  background-color: color-mix(in oklab, white calc(var(--glass-strong-a) * 100%), transparent) !important;
+}
+
+/* -----------------------------------------------------------
+   Buttons: neutral + primary gradient CTA
+----------------------------------------------------------- */
+button,
+[type="button"],
+[type="submit"] {
+  color: var(--fg);
+  background-color: color-mix(in oklab, white calc(var(--glass-strong-a) * 100%), transparent);
+  border: 1px solid color-mix(in oklab, white calc(var(--glass-border-a) * 100%), transparent);
+  border-radius: 0.75rem;
+  transition: filter 140ms ease, transform 140ms ease;
+}
+button:hover,
+[type="button"]:hover,
+[type="submit"]:hover { filter: brightness(1.06); }
+button:active,
+[type="button"]:active,
+[type="submit"]:active { transform: translateY(1px); }
+
+/* Primary green gradient pill used across CTAs */
+.btn-primary,
+.bg-\[linear-gradient\(180deg\2c \#82efbd\2c \#3fe39f\)\] {
+  background-image: linear-gradient(180deg, #82efbd, #3fe39f) !important;
+  color: #0b0f19 !important;
+  border: 1px solid rgba(16, 185, 129, 0.55) !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+}
+
+/* Subtle stat shimmer (opt-in) */
+@keyframes gentlePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.03); opacity: 0.96; }
+}
+.pulse-slow { animation: gentlePulse 5s ease-in-out infinite; }
+
+/* -----------------------------------------------------------
+   Utility: readable muted text
+----------------------------------------------------------- */
+.text-muted { color: var(--muted); }
+
+/* Prevent accidental "white on white" for generic .bg-white */
+.bg-white { background-color: color-mix(in oklab, white 12%, transparent) !important; color: var(--fg) !important; }

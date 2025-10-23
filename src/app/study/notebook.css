@@ -1,0 +1,87 @@
+/* Center hero header and remove the outer card */
+#study-root .header-card {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  padding-top: 4rem;
+  padding-bottom: 2rem;
+  text-align: center;
+}
+
+/* gradient headline */
+#study-root h1 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+  font-weight: 800;
+  background: linear-gradient(90deg, #111827 0%, var(--subject-accent, #0ea5e9) 60%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+}
+
+/* subtext under headline */
+#study-root p {
+  color: rgba(31, 41, 55, 0.75);
+  font-size: 1rem;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+}
+
+/* Subject chips */
+#study-root .subject-chip {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(24, 24, 27, 0.12);
+  border-radius: 20px;
+  padding: 6px 12px;
+  transition: all 0.2s ease;
+  color: #1f2937;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* remove black bubble, add slick glow when selected */
+#study-root .subject-chip.is-active {
+  background: linear-gradient(90deg, var(--subject-accent, #0ea5e9), #22d3ee);
+  color: #fff;
+  border: none;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
+  transform: translateY(-1px);
+}
+
+/* smaller quick actions and closer spacing */
+#study-root .qa-pill {
+  font-size: 0.9rem;
+  padding: 4px 12px;
+}
+#study-root .qa-pill.is-active {
+  background: var(--subject-accent, #0ea5e9);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* make the full study chat view fit the screen without scroll */
+#study-root .study-chat {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: calc(100vh - 220px); /* fits header + input */
+  margin-top: 1rem;
+}
+
+/* allow send bar to stick to bottom */
+#study-root .study-chat__input {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+/* optional subject-based color mapping */
+[data-subject="chemistry"] { --subject-accent: #06b6d4; }
+[data-subject="biology"] { --subject-accent: #16a34a; }
+[data-subject="physics"] { --subject-accent: #3b82f6; }
+[data-subject="civics"] { --subject-accent: #f59e0b; }
+[data-subject="economics"] { --subject-accent: #10b981; }
+[data-subject="history"] { --subject-accent: #b45309; }
+[data-subject="english"] { --subject-accent: #6366f1; }
+[data-subject="ict"] { --subject-accent: #0ea5e9; }

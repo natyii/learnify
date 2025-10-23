@@ -1,0 +1,51 @@
+#study-root {
+  --ink: #0a0a0a;
+  --ink-soft: #27272a;
+  --bubble-bg: rgba(255,255,255,0.92);
+  --bubble-border: rgba(24,24,27,0.18);
+}
+
+#study-root,
+#study-root :is(p, li, h1, h2, h3, h4, h5, h6, small, span, strong, em, code, pre) {
+  color: var(--ink) !important;
+  opacity: 1 !important;
+}
+
+#study-root :is(.card, .bubble, .ai-bubble, .prose, article, .message, .katex-block) {
+  background: var(--bubble-bg);
+  border: 1px solid var(--bubble-border);
+  border-radius: 0.75rem;
+}
+
+#study-root .quickbar button {
+  color: var(--ink) !important;
+  opacity: 1 !important;
+  border-color: rgba(24,24,27,0.2) !important;
+  background: rgba(255,255,255,0.9) !important;
+}
+#study-root .quickbar button[aria-pressed="true"],
+#study-root .quickbar .active {
+  border-color: rgb(16,185,129) !important;
+  background: rgba(16,185,129,0.08) !important;
+  color: rgb(4,120,87) !important;
+}
+
+#study-root .composer input {
+  color: var(--ink) !important;
+  background: #fff !important;
+  border-color: rgba(24,24,27,0.2) !important;
+}
+
+#study-root .katex { color: var(--ink) !important; font-size: 1.05rem; }
+#study-root .katex .mord,
+#study-root .katex .mbin,
+#study-root .katex .mrel,
+#study-root .katex .mop,
+#study-root .katex .mopen,
+#study-root .katex .mclose,
+#study-root .katex .minner { color: var(--ink) !important; }
+
+#study-root .active-book-pill {
+  background: #065f46 !important;
+  color: #fff !important;
+}

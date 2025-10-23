@@ -1,0 +1,36 @@
+{
+  "12": [
+    {
+      "id": "g12-math-core",
+      "subject": "Mathematics",
+      "title": "Grade 12 Mathematics (Core)",
+      "storage_key": "12/mathematics/grade-12-mathematics-core.pdf"
+    },
+    {
+      "id": "g12-physics",
+      "subject": "Physics",
+      "title": "Grade 12 Physics",
+      "storage_key": "12/physics/grade-12-physics.pdf"
+    },
+    {
+      "id": "g12-english",
+      "subject": "English",
+      "title": "Grade 12 English Reader",
+      "storage_key": "12/english/grade-12-english-reader.pdf"
+    }
+  ],
+  "8": [
+    {
+      "id": "g8-math",
+      "subject": "Mathematics",
+      "title": "Grade 8 Mathematics",
+      "storage_key": "8/mathematics/grade-8-mathematics.pdf"
+    },
+    {
+      "id": "g8-physics",
+      "subject": "Physics",
+      "title": "Introductory Physics",
+      "storage_key": "8/physics/introductory-physics.pdf"
+    }
+  ]
+}
