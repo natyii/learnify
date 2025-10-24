@@ -25,3 +25,8 @@ export async function getServerSupabase() {
 
   return supabase;
 }
+
+// Back-compat alias expected by existing imports
+export async function serverSupabaseRSC() {
+  return getServerSupabase();
+}

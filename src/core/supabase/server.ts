@@ -1,23 +1,29 @@
-import { createServerClient } from "@supabase/ssr";
+// src/core/supabase/server.ts
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
 export async function getServerSupabase() {
-  const cookieStore = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll(list) {
-          try { list.forEach(({ name, value, options }) => cookieStore.set({ name, value, ...options })); }
-          catch { /* no-op during SSR */ }
-        },
+  // Next.js 15: cookies() is async — await it
+  const jar = await cookies();
+
+  return createServerClient(URL, KEY, {
+    cookies: {
+      // RSC-safe: read-only
+      get(name: string) {
+        return jar.get(name)?.value;
       },
-    }
-  );
-  return supabase;
+      set(_name: string, _value: string, _opts: CookieOptions) {
+        // no-op in RSC pages to avoid "Cookies can only be modified..." errors
+      },
+      remove(_name: string, _opts: CookieOptions) {
+        // no-op in RSC pages
+      },
+    },
+  });
 }
 
-// 👇 alias expected by existing imports
+// Alias kept for existing imports
 export const serverSupabase = getServerSupabase;

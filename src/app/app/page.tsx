@@ -3,6 +3,7 @@ import Link from "next/link";
 import Theme from "@/ui/Theme";
 import { setGradeAction } from "./set-grade";
 import Image from "next/image";
+import InstallPWAButton from "@/ui/pwa/InstallPWAButton";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function AppPage({ searchParams }: PageProps) {
   return (
     <Theme>
       <main className="relative min-h-[100svh]">
-        {/* Ambient background (unchanged) */}
+        {/* Ambient background */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-20 bg-[linear-gradient(#f7f4ee,#f2efe7)]"
@@ -32,10 +33,10 @@ export default async function AppPage({ searchParams }: PageProps) {
         {/* Header */}
         <header className="sticky top-0 z-40 border-b border-black/10 bg-white/70 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-            {/* Brand: logo only (matches other pages) */}
+            {/* Brand logo */}
             <Link href="/" className="flex items-center">
               <Image
-                src="/brand/logo-wide.png"
+                src="/globe.svg"
                 alt="AI Tutor logo"
                 width={140}
                 height={36}
@@ -45,7 +46,7 @@ export default async function AppPage({ searchParams }: PageProps) {
               />
             </Link>
 
-            {/* Violet outline pills + new gradient Sign out */}
+            {/* Nav links + Install + Sign out */}
             <nav className="flex items-center gap-2">
               <Link
                 href="/library"
@@ -79,7 +80,16 @@ export default async function AppPage({ searchParams }: PageProps) {
               >
                 Progress
               </Link>
-              <form action="/auth/sign-out" method="post">
+
+              {/* Updated Install App button */}
+              <InstallPWAButton
+                className="rounded-full border border-transparent bg-[linear-gradient(180deg,#06B6D4_0%,#433389_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(6,182,212,0.35)] hover:brightness-110 transition"
+              >
+                Install App
+              </InstallPWAButton>
+
+              {/* Sign out */}
+              <form action="/sign-out" method="post">
                 <button
                   className="rounded-full border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(67,51,137,0.30)] hover:brightness-110 transition"
                 >
