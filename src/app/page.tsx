@@ -31,7 +31,8 @@ export const dynamic = "force-dynamic";
 ------------------------------------------------------------------- */
 async function getLandingStats() {
   try {
-    const h = headers();
+    // ⬇️ Next.js 15 requires awaiting dynamic APIs like headers()
+    const h = await headers();
     const proto = h.get("x-forwarded-proto") || "https";
     const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
     const origin = `${proto}://${host}`;
@@ -150,7 +151,7 @@ export default async function Page() {
           }}
         />
 
-        {/* Hero Header */}
+        {/* Header */}
         <header className="sticky top-0 z-50 border-b border-black/10 bg-white/70 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
             <Link href="/" className="flex items-center">
@@ -180,7 +181,7 @@ export default async function Page() {
           </div>
         </header>
 
-        {/* Hero Section */}
+        {/* Hero */}
         <section className="relative mx-auto max-w-3xl px-6 pb-12 pt-12 text-center">
           <div className="pointer-events-none absolute inset-x-0 top-6 -z-10 mx-auto h-[260px] max-w-3xl rounded-3xl border border-white/30 bg-white/65 backdrop-blur-xl shadow-[0_30px_80px_rgba(0,0,0,0.18)]" />
           <h1 className="mx-auto max-w-[22ch] text-5xl md:text-6xl font-semibold leading-tight text-transparent bg-clip-text bg-[linear-gradient(180deg,#0e172a_0%,#1c3356_25%,#3aa6ff_58%,#74ffd6_100%)] drop-shadow-[0_8px_26px_rgba(80,200,255,0.35)]">
