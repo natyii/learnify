@@ -10,6 +10,7 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const simple = searchParams.get("simple") === "1";
+
   // Base response (useful for debugging in dev)
   const result: any = {
     ok: false,
