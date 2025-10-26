@@ -1,6 +1,7 @@
 // src/app/page.tsx
 import Link from "next/link";
 import Image from "next/image";
+import { headers } from "next/headers";
 
 import Theme from "@/ui/Theme";
 import Nebula from "@/ui/Nebula";
@@ -20,19 +21,19 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 
-// Force dynamic rendering (Option A)
+// Force dynamic rendering (OK for Option B too)
 export const dynamic = "force-dynamic";
 
 /* -------------------- LIVE COUNTS (via internal API) --------------------
-   We call /api/health/site-counts?simple=1 (which you verified returns JSON).
-   Prefer VERCEL_URL in prod; fall back to NEXT_PUBLIC_SITE_URL; then localhost.
+   Self-detect the request origin at runtime (works on Vercel & localhost).
+   No env vars required. Calls: /api/health/site-counts?simple=1
 ------------------------------------------------------------------------- */
 async function getLandingStats() {
   try {
-    const origin =
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ??
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-      "http://localhost:3000";
+    const h = headers();
+    const proto = h.get("x-forwarded-proto") || "https";
+    const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+    const origin = `${proto}://${host}`;
 
     const url = `${origin}/api/health/site-counts?simple=1`;
     const res = await fetch(url, { cache: "no-store" });
