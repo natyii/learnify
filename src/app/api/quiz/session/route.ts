@@ -14,7 +14,6 @@ const BodySchema = z.object({
       start: z.number().int().min(1),
       end: z.number().int().min(1),
     })).min(1),
-    chapters: z.array(z.string()).optional(),
   })).min(1),
   count: z.number().int().min(1).max(100),
   difficulty: z.enum(["easy", "medium", "hard"]),
@@ -22,7 +21,7 @@ const BodySchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const supabase = await getRouteSupabase(); // R/W client (cookies ok)
+    const supabase = await getRouteSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -33,7 +32,7 @@ export async function POST(req: Request) {
     }
     const { grade, selections, count, difficulty } = parsed.data;
 
-    // Resolve grade from profile if not provided
+    // Resolve grade
     let resolvedGrade = grade ?? null;
     if (!resolvedGrade) {
       const { data: profile, error: profErr } = await supabase
@@ -48,7 +47,7 @@ export async function POST(req: Request) {
       resolvedGrade = g;
     }
 
-    // Collect pages for all subjects/ranges
+    // Gather pages
     type PageRow = { id: number; page_number: number; text_content: string | null };
     const allPageIds: number[] = [];
     const pagesForAI: PageRow[] = [];
@@ -65,30 +64,42 @@ export async function POST(req: Request) {
       const pages = await getPagesForRanges(
         supabase,
         tbId,
-        sel.pages.map(r => ({ start: Math.min(r.start, r.end), end: Math.max(r.start, r.end) })),
+        sel.pages.map((r) => ({ start: Math.min(r.start, r.end), end: Math.max(r.start, r.end) })),
       );
 
       if (!pages.length) {
-        return NextResponse.json(
-          { error: `No pages in selected ranges for ${sel.subject}` },
-          { status: 400 },
-        );
+        return NextResponse.json({ error: `No pages in selected ranges for ${sel.subject}` }, { status: 400 });
       }
 
       for (const p of pages) {
-        allPageIds.push(p.id);
-        pagesForAI.push(p);
+        allPageIds.push(p.id as any);
+        pagesForAI.push(p as any);
       }
     }
 
-    if (allPageIds.length === 0) {
+    if (!allPageIds.length) {
       return NextResponse.json({ error: "No grounding pages provided" }, { status: 400 });
     }
 
-    // Only pages with actual text are usable for AI grounding
     const pagesWithText = pagesForAI.filter(p => p.text_content && p.text_content.trim().length > 0);
+    if (!pagesWithText.length) {
+      return NextResponse.json(
+        { error: "Selected textbook pages are missing text_content. Please backfill OCR text." },
+        { status: 400 },
+      );
+    }
 
-    // Create session (so the user still has a record even if AI fails)
+    // Robust language detection (ratio-based + explicit subject)
+    const langBlob = pagesWithText.map(p => p.text_content || "").join(" ");
+    const ethiopic = (langBlob.match(/[\u1200-\u137F]/g) || []).length;
+    const latin    = (langBlob.match(/[A-Za-z]/g) || []).length;
+    const totalAlpha = ethiopic + latin;
+    const subjLabel = (selections[0]?.subject || "").trim().toLowerCase();
+    const isExplicitAmharic = subjLabel === "amharic";
+    const ethiopicRatio = totalAlpha > 0 ? ethiopic / totalAlpha : 0;
+    const languageHint = (isExplicitAmharic || ethiopicRatio >= 0.35) ? "am" : "auto";
+
+    // Create session
     const { data: session, error: insErr } = await supabase
       .from("quiz_sessions")
       .insert({
@@ -97,91 +108,87 @@ export async function POST(req: Request) {
         difficulty,
         question_count: count,
       })
-      .select("*")
-      .single();
+      .select("id, user_id, grade, difficulty, question_count")
+      .maybeSingle();
     if (insErr || !session) {
-      return NextResponse.json({ error: insErr?.message ?? "Failed to create session" }, { status: 500 });
+      return NextResponse.json({ error: insErr?.message || "Failed to create session" }, { status: 500 });
     }
 
-    // Link session -> pages
-    const linkRows = allPageIds.map(pid => ({ session_id: session.id, page_id: pid }));
-    const { error: linkErr } = await supabase.from("quiz_session_pages").insert(linkRows);
-    if (linkErr) return NextResponse.json({ error: linkErr.message }, { status: 500 });
-
-    // Attempt AI generation when we actually have text
-    let itemsToInsert: any[] = [];
     let usedAI = false;
+    let itemsToInsert: any[] = [];
 
-    if (pagesWithText.length > 0) {
-      try {
-        const ai = await getQuizAI();      // Groq (per env)
-        const model = getQuizModel();      // live model name
-        const subject = selections[0]?.subject ?? "General";
+    try {
+      const ai = await getQuizAI();
+      const model = getQuizModel();
+      const subject = selections[0]?.subject ?? "General";
 
+      // Chunk pages & attempt multiple small calls
+      const chunk = <T,>(arr: T[], size: number) => {
+        const out: T[][] = [];
+        for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+        return out;
+      };
+      const pageBatches = chunk(pagesWithText, 4);
+      const collected: any[] = [];
+      let attempts = 0;
+
+      for (const batch of pageBatches) {
+        attempts++;
+        const need = Math.max(3, count - collected.length);
         const generated = await generateMCQsFromPages({
           grade: resolvedGrade,
           subject,
           difficulty,
-          count,
-          pages: pagesWithText,
+          count: need,
+          pages: batch as any,
           openai: ai as any,
           model,
+          languageHint,
         });
-
-        if (generated.length >= Math.min(3, count)) {
-          usedAI = true;
-          itemsToInsert = generated.map((g) => ({
-            session_id: session.id,
-            subject,
-            question: g.question,
-            options: JSON.stringify(g.options),
-            correct_index: g.correct_index,
-            source_page_id: g.source_page_id ?? allPageIds[0] ?? null,
-          }));
+        if (generated?.length) {
+          for (const g of generated) {
+            if (!collected.some((x) => x.question === g.question)) collected.push(g);
+            if (collected.length >= count) break;
+          }
         }
-      } catch (err) {
-        // swallow & fall back below
-        itemsToInsert = [];
+        if (collected.length >= Math.min(count, 10) || attempts >= 3) break;
       }
-    }
 
-    // If we have zero items AND we had zero page text, tell the caller to backfill
-    if (itemsToInsert.length === 0 && pagesWithText.length === 0) {
+      if (collected.length >= Math.min(3, count)) {
+        usedAI = true;
+        itemsToInsert = collected.slice(0, count).map((g) => ({
+          session_id: session.id,
+          subject,
+          question: g.question,
+          options: JSON.stringify(g.options),
+          correct_index: g.correct_index,
+          source_page_id: g.source_page_id ?? allPageIds[0] ?? null,
+        }));
+      } else {
+        await supabase.from("quiz_sessions").delete().eq("id", session.id);
+        return NextResponse.json(
+          { error: "Could not generate enough questions from the selected pages. Try fewer pages or reduce count." },
+          { status: 400 },
+        );
+      }
+
+      const { data: insertedItems, error: itemsErr } = await supabase
+        .from("quiz_items")
+        .insert(itemsToInsert)
+        .select("id, question, options, correct_index, source_page_id, subject");
+      if (itemsErr) return NextResponse.json({ error: itemsErr.message }, { status: 500 });
+
       return NextResponse.json({
         session_id: session.id,
-        usedAI: false,
+        difficulty,
         count,
-        items: [],
-        warning: "Selected textbook pages are missing text_content. Please backfill page text in Supabase.",
+        usedAI,
+        items: insertedItems,
       });
+    } catch (e: any) {
+      try { await supabase.from("quiz_sessions").delete().eq("id", session.id); } catch {}
+      return NextResponse.json({ error: e?.message ?? "Server error" }, { status: 500 });
     }
-
-    // If AI failed but we had some text, fall back with placeholders (keeps UX usable)
-    if (itemsToInsert.length === 0) {
-      const subject = selections[0]?.subject ?? "General";
-      itemsToInsert = Array.from({ length: count }).map((_, i) => ({
-        session_id: session.id,
-        subject,
-        question: `Placeholder Q${i + 1}: Based ONLY on the selected textbook pages.`,
-        options: JSON.stringify(["Option A", "Option B", "Option C", "Option D"]),
-        correct_index: 0,
-        source_page_id: allPageIds[i % allPageIds.length] ?? null,
-      }));
-    }
-
-    const { data: insertedItems, error: itemsErr } = await supabase
-      .from("quiz_items")
-      .insert(itemsToInsert)
-      .select("id, question, options, correct_index, source_page_id, subject");
-    if (itemsErr) return NextResponse.json({ error: itemsErr.message }, { status: 500 });
-
-    return NextResponse.json({
-      session_id: session.id,
-      difficulty,
-      count,
-      usedAI,
-      items: insertedItems,
-    });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Server error" }, { status: 500 });
   }

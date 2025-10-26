@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabaseServer"; // your existing server client
 
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // 1) Get user & grade (coerce to number in case profiles.grade is text)
   const {

@@ -1,74 +1,130 @@
 // src/ui/pwa/InstallPWAButton.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import * as React from "react";
 
-type Props = { className?: string };
+type Props = React.PropsWithChildren<{
+  className?: string;
+  iosHelperClassName?: string;
+}>;
 
-export default function InstallPWAButton({ className = "" }: Props) {
-  const [deferred, setDeferred] = useState<any>(null);
-  const [installed, setInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
 
-  useEffect(() => {
-    // Detect iOS Safari
-    const ua = navigator.userAgent || navigator.vendor;
-    const ios = /iPhone|iPad|iPod/.test(ua);
-    setIsIOS(ios);
+function usePWAInstall() {
+  const [deferred, setDeferred] = React.useState<BeforeInstallPromptEvent | null>(null);
+  const [installed, setInstalled] = React.useState(false);
+  const [showIOSHelp, setShowIOSHelp] = React.useState(false);
 
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      // iOS Safari's special flag
-      (window.navigator as any).standalone === true;
-    setIsStandalone(standalone);
+  React.useEffect(() => {
+    // installed?
+    const isStandalone =
+      (typeof window !== "undefined" &&
+        (window.matchMedia("(display-mode: standalone)").matches ||
+          (window.navigator as any).standalone === true)) ||
+      false;
+    setInstalled(isStandalone);
 
-    const handler = (e: Event) => {
+    // Android/desktop Chrome prompt
+    const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      // @ts-ignore
-      setDeferred(e);
+      setDeferred(e as BeforeInstallPromptEvent);
+      setShowIOSHelp(false);
     };
-    window.addEventListener("beforeinstallprompt", handler as any);
-    window.addEventListener("appinstalled", () => setInstalled(true));
-    return () => window.removeEventListener("beforeinstallprompt", handler as any);
+
+    const onInstalled = () => setInstalled(true);
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt as any);
+    window.addEventListener("appinstalled", onInstalled);
+
+    // iOS Safari guide (no beforeinstallprompt)
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    const isiOS = /iphone|ipad|ipod/i.test(ua);
+    const isSafari = /safari/i.test(ua) && !/crios|fxios|edgios/i.test(ua);
+    if (isiOS && isSafari && !isStandalone) {
+      setShowIOSHelp(true);
+    }
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt as any);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
   }, []);
 
-  // Hide if already installed
-  if (installed || isStandalone) return null;
+  const canInstall = !!deferred && !installed;
 
-  // iOS fallback card
-  if (isIOS && !deferred) {
-    return (
-      <div
-        className={`${className} cursor-default rounded-full border border-transparent bg-[linear-gradient(180deg,#06B6D4_0%,#433389_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(6,182,212,0.35)]`}
-      >
-        Add via <span className="font-bold">Share → Add to Home Screen</span>
-      </div>
-    );
-  }
+  const install = async () => {
+    if (!deferred) return;
+    try {
+      await deferred.prompt();
+      await deferred.userChoice;
+    } finally {
+      setDeferred(null); // event becomes single-use
+    }
+  };
 
-  // Chrome/Edge install available
-  if (deferred) {
-    return (
-      <button
-        onClick={async () => {
-          deferred.prompt();
-          await deferred.userChoice;
-          setDeferred(null);
-        }}
-        className={`${className} rounded-full border border-transparent bg-[linear-gradient(180deg,#06B6D4_0%,#433389_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(6,182,212,0.35)] hover:brightness-110 transition`}
-      >
-        Install App
-      </button>
-    );
-  }
+  return {
+    installed,
+    canInstall,
+    install,
+    showIOSHelp,
+    dismissIOS: () => setShowIOSHelp(false),
+  };
+}
 
-  // Generic fallback (other browsers)
+export default function InstallPWAButton({
+  className,
+  iosHelperClassName,
+  children,
+}: Props) {
+  const { installed, canInstall, install, showIOSHelp, dismissIOS } = usePWAInstall();
+
+  // Nothing to show if already installed and no iOS hint is needed
+  if (installed || (!canInstall && !showIOSHelp)) return null;
+
   return (
-    <div
-      className={`${className} cursor-default rounded-full border border-transparent bg-[linear-gradient(180deg,#06B6D4_0%,#433389_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(6,182,212,0.35)]`}
-    >
-      Install via browser menu
+    <div className="relative">
+      {/* Actual install button (Android/Chrome/Edge) */}
+      {canInstall && (
+        <button
+          type="button"
+          onClick={install}
+          className={
+            className ??
+            "rounded-full px-4 py-2 text-sm font-semibold bg-black text-white"
+          }
+          aria-label="Install app"
+        >
+          {children ?? "Install app"}
+        </button>
+      )}
+
+      {/* iOS Safari helper (Share → Add to Home Screen) */}
+      {!canInstall && showIOSHelp && (
+        <div
+          className={
+            iosHelperClassName ??
+            "rounded-full border border-black/10 bg-white/80 px-3 py-2 text-xs font-medium text-slate-800 backdrop-blur hover:bg-white"
+          }
+          role="note"
+        >
+          <span className="hidden sm:inline">
+            Install via browser menu: Share → “Add to Home Screen”
+          </span>
+          <span className="sm:hidden">Share → “Add to Home Screen”</span>
+          <button
+            type="button"
+            onClick={dismissIOS}
+            className="ml-2 rounded-md px-2 py-0.5 text-[11px] border border-black/10 hover:bg-black/5"
+            aria-label="Dismiss install helper"
+          >
+            Got it
+          </button>
+        </div>
+      )}
     </div>
   );
 }

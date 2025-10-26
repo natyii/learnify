@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabaseServer";
 
 export async function GET(req: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const subject = String(req.nextUrl.searchParams.get("subject") || "").trim().toLowerCase();
   if (!subject) return NextResponse.json({ error: "Missing subject" }, { status: 400 });
 

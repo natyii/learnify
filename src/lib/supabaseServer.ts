@@ -1,7 +1,7 @@
 import { getServerSupabase } from "@/core/supabase/server";
 
-export function createClient() {
-  return getServerSupabase();
+export async function createClient() {
+    return await getServerSupabase();
 }
 
 // 👇 alias expected by existing imports

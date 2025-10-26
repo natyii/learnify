@@ -1,6 +1,5 @@
-/* ==========================================================================
-   Quiz Page Theme — Study "Notebook" background + centered gradient hero
-   ========================================================================== */
+/* src/app/quiz/quiz.theme.module.css */
+ /* (unchanged header of file) */
 
 .quizTheme {
   /* Shared tokens */
@@ -15,41 +14,41 @@
   --paper-lines: rgba(0, 84, 201, 0.18);
   --paper-margin: rgba(255, 59, 48, 0.26);
 
-  /* Brand gradient for hero */
-  --brand-start: #4f46e5; /* indigo-600 */
-  --brand-mid:   #6366f1; /* indigo-500 */
-  --brand-end:   #06b6d4; /* cyan-500 */
-
-  position: relative;
-  min-height: 100svh;
-  color: var(--ink);
-  isolation: isolate;
-
+  /* Background */
   background:
     radial-gradient(circle at 1px 1px, var(--paper-dots) 1px, transparent 1.5px) 0 0/18px 18px,
     repeating-linear-gradient(to bottom, transparent 0 28px, var(--paper-lines) 28px 29px),
-    linear-gradient(90deg, transparent 0 54px, var(--paper-margin) 54px 56px, transparent 56px),
-    var(--paper);
-  color-scheme: light;
-  overflow-y: auto;
+    linear-gradient(90deg, var(--paper-margin) 0 60px, transparent 60px 100vw),
+    linear-gradient(#f9f7ef 0%, #f4f1e9 100%);
+
+  min-height: 100svh;
+  color: var(--ink);
+  padding-inline: 16px; /* prevent edge-to-edge */
 }
 
-/* ----------------------------- Hero title -------------------------------- */
-/* Centered + gentle gradient like the app header style */
-.quizTitle {
-  display: block;
-  margin: 0 auto .25rem auto;
-  text-align: center;
+/* Header */
+.header {
+  max-width: 1100px;
+  margin-inline: auto;
+  padding: 24px 0 12px;
+  text-align: left;
+}
+.header h1 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 1.1;
-  letter-spacing: -0.01em;
-  background: linear-gradient(90deg, var(--brand-start), var(--brand-mid), var(--brand-end));
-  -webkit-background-clip: text;
+}
+.header p { color: var(--muted); }
+
+/* Gradient title accent (unchanged) */
+.title {
+  background: linear-gradient(90deg, #615BDB, #06B6D4);
   background-clip: text;
   color: transparent;
   text-shadow: 0 1px 0 rgba(255,255,255,.6);
 }
 
-/* ----------------------------- Chips ------------------------------------- */
+/* Subject chips */
 .chips { display:flex; flex-wrap:wrap; gap:.5rem; justify-content:center; }
 .chip {
   background: #ffffff;
@@ -59,97 +58,85 @@
   border-radius: 999px;
   font-size: .875rem;
   font-weight: 600;
-  box-shadow:
-    0 1px 0 rgba(15,23,42,.02),
-    0 6px 14px rgba(15,23,42,.06);
-  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
-}
-.chip:hover {
-  transform: translateY(-1px);
-  background: #fff;
-  box-shadow:
-    0 1px 0 rgba(15,23,42,.03),
-    0 10px 20px rgba(15,23,42,.08);
+  box-shadow: 0 1px 0 rgba(0,0,0,.04);
 }
 .chipActive {
-  background: linear-gradient(180deg, #8df0c9, #3fe39f);
-  color: #052016;
-  border-color: rgba(16,185,129,.55);
+  background: linear-gradient(180deg, #34d399, #10b981);
+  color: white;
+  border-color: rgba(0,0,0,.10);
+  box-shadow: 0 6px 14px rgba(16,185,129,.25);
 }
 
-/* ----------------------------- Panels ------------------------------------ */
+/* Panels */
 .panel {
-  background: var(--panel);
+  max-width: 1100px;
+  margin-inline: auto;
+  background: rgba(255,255,255,.72);
   border: 1px solid var(--panel-border);
-  backdrop-filter: blur(8px) saturate(120%);
-  -webkit-backdrop-filter: blur(8px) saturate(120%);
-  color: #16181d;
-  border-radius: 14px;
-  padding: 1rem;
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.5) inset,
-    0 8px 24px rgba(18,18,18,0.06);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0,0,0,.08);
+  padding: 16px;
+  margin: 12px auto;
 }
 
-/* ----------------------------- Form bits --------------------------------- */
-.label { color: var(--muted); font-size: .9rem; }
-
-/* Base input/select style (legible text, incl. disabled) */
-.input,
-.panel input[type="number"],
-.panel input[type="text"],
-.panel select {
-  appearance: none;
-  background: #ffffff;
-  color: var(--ink);              /* ensure visible text */
-  border: 1px solid rgba(34, 40, 60, 0.14);
-  border-radius: 10px;
-  padding: .46rem .6rem;
-  font-size: .92rem;
-  min-width: 5rem;
+.panelTitle {
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
-/* Placeholder legibility */
-.input::placeholder,
-.panel input::placeholder {
-  color: #6b7280;                 /* slate-500 */
-  opacity: 1;                     /* Safari */
+/* Options row etc. (existing rules) */
+.optionsRow { display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; }
+.optionLabel { color: var(--muted); font-weight:600; }
+.optionInput, .optionSelect {
+  height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(34,40,60,.14);
+  background: rgba(255,255,255,.95);
 }
 
-/* Disabled state: keep readable */
-.input:disabled,
-.panel input:disabled,
-.panel select:disabled {
-  background: rgba(255,255,255,0.8);
-  color: #64748b;                 /* slate-500/600 */
-  border-color: rgba(34,40,60,0.16);
-  -webkit-text-fill-color: #64748b; /* Safari */
+/* Items list */
+.items {
+  max-width: 1100px;
+  margin-inline: auto;
+  display: grid;
+  gap: 16px;
 }
 
-/* Focus ring */
-.input:focus,
-.panel input:focus,
-.panel select:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(16,185,129,.18); /* emerald halo (Study match) */
+/* Question card */
+.itemCard {
+  background: rgba(255,255,255,.72);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0,0,0,.08);
+  padding: 16px;
 }
 
-/* Make <select> text always visible */
-.panel select { color: var(--ink); background-color: #fff; }
+.itemHeader { display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem; }
+.itemIndex {
+  inline-size: 36px; block-size: 36px; border-radius: 12px;
+  display:grid; place-items:center; font-weight:800;
+  background: rgba(16,185,129,.12); color:#065f46; border:1px solid rgba(5,150,105,.22);
+}
+.itemSubject { font-weight:700; color: var(--muted); }
 
-/* ----------------------------- Buttons ----------------------------------- */
+.itemQuestion { font-weight:700; line-height:1.35; margin: 6px 0 10px; }
+
+/* Options as pills */
+.itemOptions { display:flex; flex-wrap:wrap; gap:.5rem; }
+.optionChip {
+  min-height: 40px;
+  padding: .5rem .75rem; border-radius: 999px; border: 1px solid rgba(34,40,60,.14);
+  background: rgba(255,255,255,.95); color: var(--ink); font-weight:600;
+  transition: transform .05s ease, box-shadow .15s ease;
+}
+.optionChip:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,.06); }
+.optionChipActive {
+  background: linear-gradient(180deg, #34d399, #10b981); color: white; border-color: rgba(0,0,0,.08);
+  box-shadow: 0 8px 20px rgba(16,185,129,.25);
+}
+
+/* Buttons (unchanged existing styles tightened a bit) */
 .btnPrimary {
-  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-  height: 38px; padding: 0 16px;
-  border-radius: 10px; font-size: .92rem; font-weight: 700;
-  border: 1px solid rgba(16,185,129,.55);
-  background: linear-gradient(180deg, #82efbd, #3fe39f);
-  color: #052016;
-  transition: filter 140ms ease, transform 140ms ease;
-}
-.btnPrimary:hover { filter: brightness(1.03); transform: translateY(-1px); }
-
-.btnGhost {
   display: inline-flex; align-items: center; justify-content: center;
   height: 38px; padding: 0 14px;
   border-radius: 10px; font-weight: 600; font-size: .92rem;
@@ -157,10 +144,8 @@
   background: rgba(255,255,255,.95); color: var(--ink);
 }
 
-/* ----------------------------- Layout helpers ---------------------------- */
+/* Layout helpers */
 .controls { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; }
-
-/* Radio styling inside panels */
 .panel ol { counter-reset: quiz; }
 .panel li { scroll-margin-top: 80px; }
-.panel input[type="radio"] { accent-color: #10b981; } /* emerald */
+.panel input[type="radio"] { accent-color: #10b981; }

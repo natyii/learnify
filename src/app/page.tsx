@@ -8,7 +8,6 @@ import ParallaxDoodles from "@/ui/ParallaxDoodles";
 
 import { FeatureCard } from "@/ui/FeatureCard";
 import { FAQItem } from "@/ui/FAQ";
-import StatsStrip from "@/ui/StatsStrip";
 import {
   BookOpenCheck,
   MessagesSquare,
@@ -16,9 +15,113 @@ import {
   GraduationCap,
   ChartBar,
   ShieldCheck,
+  BookOpen,
+  Users,
+  ClipboardCheck,
 } from "lucide-react";
 
-export default function Page() {
+// Cache (you can tune later)
+export const revalidate = 300;
+
+/* -------------------- LIVE COUNTS (via internal API) --------------------
+   We call /api/health/site-counts?simple=1 (which you verified returns JSON).
+   Using NEXT_PUBLIC_SITE_URL avoids any headers() pitfalls locally & in prod.
+------------------------------------------------------------------------- */
+async function getLandingStats() {
+  try {
+    const origin =
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "http://localhost:3000";
+    const url = `${origin}/api/health/site-counts?simple=1`;
+    const res = await fetch(url, { cache: "no-store" });
+
+    if (!res.ok) {
+      console.error("[landing] stats error:", res.status);
+      return { textbooks: 0, attempts: 0, users: 0, ok: false as const };
+    }
+
+    const data = await res.json(); // { textbooks, attempts, users }
+    return {
+      textbooks: Number(data?.textbooks ?? 0),
+      attempts: Number(data?.attempts ?? 0),
+      users: Number(data?.users ?? 0),
+      ok: true as const,
+    };
+  } catch (e) {
+    console.error("[landing] stats fetch error:", e);
+    return { textbooks: 0, attempts: 0, users: 0, ok: false as const };
+  }
+}
+
+/* -------------------- Rolling number UI -------------------- */
+function RollingNumber({ value }: { value: number }) {
+  // keep plain digits for the column animation (formatting can be added later)
+  const digits = value.toString().split("");
+  return (
+    <div className="flex items-end gap-0.5 text-3xl font-bold tracking-tight md:text-4xl">
+      {digits.map((d, i) =>
+        /\d/.test(d) ? <Digit key={i} n={Number(d)} /> : <span key={i}>{d}</span>
+      )}
+    </div>
+  );
+}
+
+/** FIXED: animate to the correct digit using a CSS variable; do NOT override it back to 0 */
+function Digit({ n }: { n: number }) {
+  return (
+    <span
+      className="relative inline-block h-[1.1em] w-[0.66em] overflow-hidden rounded-sm bg-gradient-to-b from-[#F1F0FF] to-white text-center text-[#1F235A]"
+      style={{ lineHeight: "1.1em" } as React.CSSProperties}
+      aria-hidden="true"
+    >
+      <span
+        className="absolute left-0 top-0 inline-flex flex-col will-change-transform"
+        // We set the target digit in a CSS var; keyframes read it safely.
+        style={
+          {
+            // @ts-ignore - custom prop
+            ["--digit"]: n,
+            animation: "rollToDigit 650ms cubic-bezier(.22,1,.36,1) forwards",
+          } as React.CSSProperties
+        }
+      >
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((v) => (
+          <span key={v} style={{ height: "1.1em" }}>
+            {v}
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
+
+const StatCard = ({
+  icon,
+  label,
+  value,
+  gradient = "from-[#06B6D4] to-[#433389]",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  gradient?: string;
+}) => (
+  <div className="group rounded-2xl border border-black/10 bg-white/70 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.12)] backdrop-blur-xl transition hover:bg-white">
+    <div className="mb-3 flex items-center gap-2">
+      <div
+        className={`inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-b ${gradient} text-white shadow-[0_8px_20px_rgba(67,51,137,.28)]`}
+        style={{ animation: "gentlePulse 2.5s ease-in-out infinite" as any }}
+      >
+        {icon}
+      </div>
+      <div className="text-[13px] font-medium text-[#433389]">{label}</div>
+    </div>
+    <RollingNumber value={value} />
+  </div>
+);
+
+export default async function Page() {
+  const stats = await getLandingStats();
+
   return (
     <Theme>
       <main className="relative min-h-[100svh]">
@@ -28,30 +131,36 @@ export default function Page() {
         </div>
         <ParallaxDoodles />
 
-        {/* Define the gentlePulse keyframes without styled-jsx */}
+        {/* Keyframes */}
         <style
           dangerouslySetInnerHTML={{
             __html: `
               @keyframes gentlePulse {
                 0%,100% { transform: scale(1); opacity: 1; }
-                50%      { transform: scale(1.03); opacity: 0.95; }
+                50%      { transform: scale(1.03); opacity: 0.97; }
+              }
+              /* Animate from 0 to the CSS variable --digit (0..9) */
+              @keyframes rollToDigit {
+                from { transform: translateY(0); }
+                to   { transform: translateY(calc(-1.1em * var(--digit))); }
               }
             `,
           }}
         />
+
         {/* Hard override ONLY the hero "I already have an account" link */}
         <style
           dangerouslySetInnerHTML={{
             __html: `
               #hero-existing-account {
-                border: 1px solid rgba(97,91,219,0.40) !important; /* #615BDB/40 */
+                border: 1px solid rgba(97,91,219,0.40) !important;
                 background: transparent !important;
                 color: #433389 !important;
                 opacity: 1 !important;
                 text-decoration: none !important;
               }
               #hero-existing-account:hover {
-                background: rgba(97,91,219,0.10) !important; /* #615BDB/10 */
+                background: rgba(97,91,219,0.10) !important;
               }
               #hero-existing-account:focus-visible {
                 outline: 2px solid rgba(97,91,219,0.40) !important;
@@ -64,10 +173,9 @@ export default function Page() {
         {/* Header */}
         <header className="sticky top-0 z-50 border-b border-black/10 bg-white/70 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-            {/* Replaced the text+dot badge with the logo only */}
             <Link href="/" className="flex items-center">
               <Image
-                src="/brand/logo-wide.png" // put your PNG here (≥512px wide recommended)
+                src="/brand/logo-wide.png"
                 alt="AI Tutor logo"
                 width={140}
                 height={36}
@@ -78,7 +186,6 @@ export default function Page() {
             </Link>
 
             <nav className="flex items-center gap-2">
-              {/* Outline buttons */}
               <a
                 href="#features"
                 className="rounded-full border border-[#615BDB]/40 bg-transparent px-3 py-2 text-sm text-[#433389] shadow-sm hover:bg-[#615BDB]/10 hover:text-[#433389]"
@@ -91,16 +198,12 @@ export default function Page() {
               >
                 FAQ
               </a>
-
-              {/* Secondary button */}
               <Link
                 href="/sign-in"
                 className="rounded-full border border-[#615BDB]/30 bg-[#615BDB]/10 px-4 py-2 text-sm font-medium text-[#433389] shadow-sm hover:bg-[#615BDB]/20 focus:outline-none focus:ring-2 focus:ring-[#615BDB]/40"
               >
                 Sign in
               </Link>
-
-              {/* Primary gradient button – keep text pure white */}
               <Link
                 href="/sign-up"
                 className="rounded-full border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-4 py-2 text-sm font-semibold text-white hover:text-white shadow-[0_8px_22px_rgba(67,51,137,0.35)] hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[#615BDB]/50"
@@ -134,7 +237,6 @@ export default function Page() {
           </p>
 
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-            {/* Primary gradient button */}
             <Link
               href="/sign-up"
               className="rounded-xl border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-6 py-3 font-semibold text-white shadow-[0_12px_28px_rgba(67,51,137,0.35)] hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[#615BDB]/50"
@@ -142,7 +244,6 @@ export default function Page() {
               Create free account
             </Link>
 
-            {/* Hero secondary (now fully visible, bold outline style) */}
             <Link
               id="hero-existing-account"
               href="/sign-in"
@@ -159,8 +260,37 @@ export default function Page() {
           </ul>
         </section>
 
-        {/* Live stats (server) */}
-        <StatsStrip />
+        {/* ---------- LIVE SUPABASE STATS (from internal API) ---------- */}
+        <section className="mx-auto max-w-6xl px-6 pb-16">
+          <div className="mb-3 text-center text-sm font-medium text-[#433389]">
+           Live usage
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <StatCard
+              icon={<BookOpen className="h-5 w-5" />}
+              label="Textbooks in library"
+              value={stats.textbooks}
+              gradient="from-[#06B6D4] to-[#433389]"
+            />
+            <StatCard
+              icon={<ClipboardCheck className="h-5 w-5" />}
+              label="Quizzes taken"
+              value={stats.attempts}
+              gradient="from-[#433389] to-[#06B6D4]"
+            />
+            <StatCard
+              icon={<Users className="h-5 w-5" />}
+              label="Total users"
+              value={stats.users}
+              gradient="from-[#615BDB] to-[#433389]"
+            />
+          </div>
+          {!stats.ok && (
+            <p className="mt-2 text-center text-xs text-amber-700">
+              Stats unavailable. Check /api/health/site-counts for details.
+            </p>
+          )}
+        </section>
 
         {/* Features */}
         <section id="features" className="mx-auto max-w-6xl px-6 pb-20">
@@ -212,9 +342,7 @@ export default function Page() {
 
         {/* FAQ */}
         <section id="faq" className="mx-auto max-w-3xl px-6 pb-24 text-center">
-          <h2 className="mb-4 text-2xl font-semibold text-black">
-            Frequently asked
-          </h2>
+          <h2 className="mb-4 text-2xl font-semibold text-black">Frequently asked</h2>
           <div className="space-y-3 text-left">
             <FAQItem
               q="Works without internet?"
