@@ -20,17 +20,20 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 
-// Cache (you can tune later)
-export const revalidate = 300;
+// Force dynamic rendering (Option A)
+export const dynamic = "force-dynamic";
 
 /* -------------------- LIVE COUNTS (via internal API) --------------------
    We call /api/health/site-counts?simple=1 (which you verified returns JSON).
-   Using NEXT_PUBLIC_SITE_URL avoids any headers() pitfalls locally & in prod.
+   Prefer VERCEL_URL in prod; fall back to NEXT_PUBLIC_SITE_URL; then localhost.
 ------------------------------------------------------------------------- */
 async function getLandingStats() {
   try {
     const origin =
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "http://localhost:3000";
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ??
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+      "http://localhost:3000";
+
     const url = `${origin}/api/health/site-counts?simple=1`;
     const res = await fetch(url, { cache: "no-store" });
 
