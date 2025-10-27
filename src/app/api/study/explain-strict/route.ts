@@ -3,6 +3,67 @@ import { NextResponse } from "next/server";
 import { serverSupabase } from "@/core/supabase/server";
 import { chatWithProvider } from "@/lib/ai/provider";
 
+// --- NEW: Groq fallback (robust against decommissioned models) ---
+import Groq from "groq-sdk";
+const GROQ_KEY = process.env.GROQ_API_KEY || process.env.GROQ_KEY;
+const groqClient = GROQ_KEY ? new Groq({ apiKey: GROQ_KEY }) : null;
+
+// rotation order: prefer strong/available models; env can override
+const MODEL_PREFS = [
+  process.env.GROQ_MODEL,       // optional env "first choice"
+  "llama3-70b-8192",
+  "llama3-8b-8192",
+  "mixtral-8x7b-32768",
+].filter(Boolean) as string[];
+
+let cachedWorkingModel: string | null = null;
+
+async function groqChatWithFallback(system: string, user: string) {
+  if (!groqClient) {
+    return { ok: false as const, reason: "NO_GROQ_KEY" };
+  }
+
+  const tried = new Set<string>();
+  const list = cachedWorkingModel
+    ? [cachedWorkingModel, ...MODEL_PREFS]
+    : MODEL_PREFS;
+
+  for (const model of list) {
+    if (!model || tried.has(model)) continue;
+    tried.add(model);
+
+    try {
+      const r = await groqClient.chat.completions.create({
+        model,
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      });
+      const text = r.choices?.[0]?.message?.content ?? "";
+      cachedWorkingModel = model; // remember what worked
+      return { ok: true as const, text, model };
+    } catch (err: any) {
+      const msg = String(err?.message || err);
+      // transparent retry on common retirement / availability issues
+      if (
+        msg.toLowerCase().includes("decommission") ||
+        msg.toLowerCase().includes("not found") ||
+        err?.status === 400
+      ) {
+        continue;
+      }
+      // hard error: stop after the last attempt
+      if (tried.size >= list.length) {
+        return { ok: false as const, reason: msg, tried: Array.from(tried) };
+      }
+    }
+  }
+
+  return { ok: false as const, reason: "NO_MODEL_WORKED", tried: Array.from(tried) };
+}
+
 // Expected body from StudyChat:
 // { subject: string, grade: number, message: string, bookId?: string|null }
 type Body = {
@@ -93,23 +154,46 @@ export async function POST(req: Request) {
 
     const citations = [{ bookId: rows[0].book_id, page: page ?? rows[0].page }];
 
-    const ai = await chatWithProvider({
-      mode: "steps",
-      subject,
-      grade,
-      question: user,
-      context: { citations, snippets: [{ page: citations[0].page, excerpt: picked.raw.slice(0, 1500) }] },
-      system,
-      temperature: 0.2,
-    });
+    // 5) NEW: Try Groq first with model rotation; if unavailable, fall back to existing provider
+    let content: string | null = null;
+    let usedModel: string | null = null;
+
+    const groqTry = await groqChatWithFallback(system, user);
+    if (groqTry.ok) {
+      content = groqTry.text;
+      usedModel = groqTry.model;
+    } else if (groqTry.reason === "NO_GROQ_KEY") {
+      // No Groq configured → use existing provider abstraction
+      const ai = await chatWithProvider({
+        mode: "steps",
+        subject,
+        grade,
+        question: user,
+        context: { citations, snippets: [{ page: citations[0].page, excerpt: picked.raw.slice(0, 1500) }] },
+        system,
+        temperature: 0.2,
+      });
+      content = ai?.content ?? null;
+    } else {
+      // Groq configured but rotation failed; provide a helpful message + tried list
+      content =
+        `I'm having trouble with the current Groq models (${(groqTry as any).tried?.join(", ") || "no models tried"}).\n` +
+        `Please retry in a moment or paste the block text, and I'll proceed.`;
+    }
 
     return NextResponse.json(
       {
         content:
-          ai?.content ??
+          content ??
           `Let’s walk through ${prettyLabel(tag, number)} step by step using the textbook block (p. ${citations[0].page}).`,
         citations,
-        strict: { tag, number, page: citations[0].page, detectedTitle: picked.title ?? null },
+        strict: {
+          tag,
+          number,
+          page: citations[0].page,
+          detectedTitle: picked.title ?? null,
+          model: usedModel,
+        },
       },
       { status: 200 }
     );
@@ -160,7 +244,7 @@ async function fetchPageWindow(opts: {
       .from("textbook_pages")
       .select("book_id,page,text")
       .eq("book_id", bookId)
-      .in("page", pages)
+      .in("page", pages as any)
       .order("page", { ascending: true })
       .limit(3);
     rows = (data || []) as any;
@@ -183,7 +267,7 @@ async function fetchPageWindow(opts: {
         .from("textbook_pages")
         .select("book_id,page,text")
         .eq("book_id", book.id)
-        .in("page", pages)
+        .in("page", pages as any)
         .order("page", { ascending: true })
         .limit(3);
       rows = (data || []) as any;

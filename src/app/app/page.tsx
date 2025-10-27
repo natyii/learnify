@@ -3,12 +3,10 @@ import Link from "next/link";
 import Theme from "@/ui/Theme";
 import { setGradeAction } from "./set-grade";
 import Image from "next/image";
-import InstallPWAButton from "@/ui/pwa/InstallPWAButton";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  // Next 15: searchParams is a Promise in RSC; keep it typed this way
   searchParams?: Promise<Record<string, string | string[]>>;
 };
 
@@ -20,7 +18,7 @@ export default async function AppPage({ searchParams }: PageProps) {
   return (
     <Theme>
       <main className="relative min-h-[100svh]">
-        {/* Ambient background */}
+        {/* Background */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-20 bg-[linear-gradient(#f7f4ee,#f2efe7)]"
@@ -30,73 +28,30 @@ export default async function AppPage({ searchParams }: PageProps) {
           className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(59,130,246,0.10),transparent_60%),radial-gradient(900px_500px_at_5%_30%,rgba(16,185,129,0.10),transparent_55%)]"
         />
 
-        {/* Header */}
-        <header className="sticky top-0 z-40 border-b border-black/10 bg-white/70 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-            {/* Brand logo */}
-            <Link href="/" className="flex items-center">
+        {/* Header — same compact height, logo slightly larger */}
+        <header className="sticky top-0 z-40 border-b border-black/10 bg-white/70 backdrop-blur-xl overflow-visible">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-1.5 h-[60px] relative">
+            {/* Logo enlarged slightly more */}
+            <Link href="/" className="flex items-center -translate-y-[2px]">
               <Image
-                src="/globe.svg"
-                alt="AI Tutor logo"
-                width={140}
-                height={36}
+                src="/brand/logo-text.png"
+                alt="AI Tutor — Ethiopia"
+                width={640}
+                height={180}
                 priority
-                className="h-9 w-auto select-none"
-                sizes="(max-width: 640px) 120px, 140px"
+                className="h-[132px] w-auto select-none object-contain"
+                sizes="(max-width: 640px) 320px, 640px"
               />
             </Link>
 
-            {/* Nav links + Install + Sign out */}
-            <nav className="flex items-center gap-2">
-              <Link
-                href="/library"
-                className="rounded-full border border-[#615BDB]/40 bg-transparent px-3 py-2 text-sm font-medium text-[#433389] shadow-sm hover:bg-[#615BDB]/10"
+            {/* Sign out button */}
+            <form action="/sign-out" method="post">
+              <button
+                className="rounded-full border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-4 py-1.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(67,51,137,0.30)] hover:brightness-110 transition"
               >
-                Library
-              </Link>
-              <Link
-                href="/study"
-                className="rounded-full border border-[#615BDB]/40 bg-transparent px-3 py-2 text-sm font-medium text-[#433389] shadow-sm hover:bg-[#615BDB]/10"
-              >
-                Study
-              </Link>
-              <Link
-                href="/homework"
-                className="rounded-full border border-[#615BDB]/40 bg-transparent px-3 py-2 text-sm font-medium text-[#433389] shadow-sm hover:bg-[#615BDB]/10"
-              >
-                Homework
-              </Link>
-              <Link
-                href="/quiz"
-                prefetch
-                className="rounded-full border border-[#615BDB]/40 bg-transparent px-3 py-2 text-sm font-medium text-[#433389] shadow-sm hover:bg-[#615BDB]/10"
-              >
-                Quizzes
-              </Link>
-              <Link
-                href="/progress"
-                prefetch
-                className="rounded-full border border-[#615BDB]/40 bg-transparent px-3 py-2 text-sm font-medium text-[#433389] shadow-sm hover:bg-[#615BDB]/10"
-              >
-                Progress
-              </Link>
-
-              {/* Updated Install App button */}
-              <InstallPWAButton
-                className="rounded-full border border-transparent bg-[linear-gradient(180deg,#06B6D4_0%,#433389_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(6,182,212,0.35)] hover:brightness-110 transition"
-              >
-                Install App
-              </InstallPWAButton>
-
-              {/* Sign out */}
-              <form action="/sign-out" method="post">
-                <button
-                  className="rounded-full border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(67,51,137,0.30)] hover:brightness-110 transition"
-                >
-                  Sign out
-                </button>
-              </form>
-            </nav>
+                Sign out
+              </button>
+            </form>
           </div>
         </header>
 
@@ -109,8 +64,8 @@ export default async function AppPage({ searchParams }: PageProps) {
               </span>
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-[15px] text-slate-600">
-              Pick up where you left off — study with page citations, get step-by-step homework
-              help, take quizzes, or review your progress.
+              Pick up where you left off — study with page citations, get
+              step-by-step homework help, take quizzes, or review your progress.
             </p>
           </div>
 

@@ -19,6 +19,12 @@ import {
   BookOpen,
   Users,
   ClipboardCheck,
+  Mail,
+  Phone,
+  Facebook,
+  Instagram,
+  Twitter,
+  Youtube,
 } from "lucide-react";
 
 // Force runtime render on every request (needed for live Supabase stats)
@@ -26,12 +32,9 @@ export const dynamic = "force-dynamic";
 
 /* ------------------------------------------------------------------
    getLandingStats()
-   Self-detects the runtime origin — works in Vercel, localhost, or custom domain.
-   Fetches /api/health/site-counts?simple=1 and returns clean numeric values.
 ------------------------------------------------------------------- */
 async function getLandingStats() {
   try {
-    // ⬇️ Next.js 15 requires awaiting dynamic APIs like headers()
     const h = await headers();
     const proto = h.get("x-forwarded-proto") || "https";
     const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
@@ -40,10 +43,8 @@ async function getLandingStats() {
     const url = `${origin}/api/health/site-counts?simple=1`;
     const res = await fetch(url, { cache: "no-store" });
 
-    console.log("[landing] fetch", { origin, status: res.status });
-
     if (!res.ok) {
-      return { textbooks: 0, attempts: 0, users: 0, ok: false as const, _debug: { origin, status: res.status } };
+      return { textbooks: 0, attempts: 0, users: 0, ok: false as const };
     }
 
     const data = await res.json();
@@ -52,11 +53,9 @@ async function getLandingStats() {
       attempts: Number(data?.attempts ?? 0),
       users: Number(data?.users ?? 0),
       ok: true as const,
-      _debug: { origin, status: res.status },
     };
-  } catch (e) {
-    console.error("[landing] stats fetch error:", e);
-    return { textbooks: 0, attempts: 0, users: 0, ok: false as const, _debug: { error: String(e) } };
+  } catch {
+    return { textbooks: 0, attempts: 0, users: 0, ok: false as const };
   }
 }
 
@@ -151,30 +150,45 @@ export default async function Page() {
           }}
         />
 
-        {/* Header */}
+        {/* Header — same height/blur; logo on the left */}
         <header className="sticky top-0 z-50 border-b border-black/10 bg-white/70 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-            <Link href="/" className="flex items-center">
+          <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 h-[72px]">
+            {/* Logo (slightly smaller than previous) */}
+            <Link href="/" className="flex items-center -my-8">
               <Image
-                src="/brand/logo-wide.png"
-                alt="AI Tutor logo"
-                width={140}
-                height={36}
+                src="/brand/logo-text.png"
+                alt="AI Tutor — Ethiopia"
+                width={1200}
+                height={300}
                 priority
-                className="h-9 w-auto select-none"
+                className="h-[210px] w-auto object-contain select-none"
               />
             </Link>
-            <nav className="flex items-center gap-2">
-              <a href="#features" className="rounded-full border border-[#615BDB]/40 px-3 py-2 text-sm text-[#433389] hover:bg-[#615BDB]/10">
+
+            {/* Nav on the right (unchanged) */}
+            <nav className="relative flex items-center gap-3">
+              <a
+                href="#features"
+                className="rounded-full border border-[#615BDB]/40 px-3 py-2 text-sm text-[#433389] hover:bg-[#615BDB]/10"
+              >
                 Features
               </a>
-              <a href="#faq" className="rounded-full border border-[#615BDB]/40 px-3 py-2 text-sm text-[#433389] hover:bg-[#615BDB]/10">
+              <a
+                href="#faq"
+                className="rounded-full border border-[#615BDB]/40 px-3 py-2 text-sm text-[#433389] hover:bg-[#615BDB]/10"
+              >
                 FAQ
               </a>
-              <Link href="/sign-in" className="rounded-full border border-[#615BDB]/30 bg-[#615BDB]/10 px-4 py-2 text-sm font-medium text-[#433389] hover:bg-[#615BDB]/20">
+              <Link
+                href="/sign-in"
+                className="rounded-full border border-[#615BDB]/30 bg-[#615BDB]/10 px-4 py-2 text-sm font-medium text-[#433389] hover:bg-[#615BDB]/20"
+              >
                 Sign in
               </Link>
-              <Link href="/sign-up" className="rounded-full border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(67,51,137,0.35)] hover:brightness-110">
+              <Link
+                href="/sign-up"
+                className="rounded-full border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(67,51,137,0.35)] hover:brightness-110"
+              >
                 Get started
               </Link>
             </nav>
@@ -182,8 +196,8 @@ export default async function Page() {
         </header>
 
         {/* Hero */}
-        <section className="relative mx-auto max-w-3xl px-6 pb-12 pt-12 text-center">
-          <div className="pointer-events-none absolute inset-x-0 top-6 -z-10 mx-auto h-[260px] max-w-3xl rounded-3xl border border-white/30 bg-white/65 backdrop-blur-xl shadow-[0_30px_80px_rgba(0,0,0,0.18)]" />
+        <section className="relative mx-auto max-w-3xl px-6 pb-12 pt-6 text-center">
+          <div className="pointer-events-none absolute inset-x-0 top-3 -z-10 mx-auto h-[260px] max-w-3xl rounded-3xl border border-white/30 bg-white/65 backdrop-blur-xl shadow-[0_30px_80px_rgba(0,0,0,0.18)]" />
           <h1 className="mx-auto max-w-[22ch] text-5xl md:text-6xl font-semibold leading-tight text-transparent bg-clip-text bg-[linear-gradient(180deg,#0e172a_0%,#1c3356_25%,#3aa6ff_58%,#74ffd6_100%)] drop-shadow-[0_8px_26px_rgba(80,200,255,0.35)]">
             Smarter study, grounded in your textbook.
           </h1>
@@ -192,10 +206,17 @@ export default async function Page() {
             homework help with steps, generated quizzes, and meaningful progress tracking.
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/sign-up" className="rounded-xl border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-6 py-3 font-semibold text-white shadow-[0_12px_28px_rgba(67,51,137,0.35)] hover:brightness-110">
+            <Link
+              href="/sign-up"
+              className="rounded-xl border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-6 py-3 font-semibold text-white shadow-[0_12px_28px_rgba(67,51,137,0.35)] hover:brightness-110"
+            >
               Create free account
             </Link>
-            <Link id="hero-existing-account" href="/sign-in" className="rounded-xl px-6 py-3 font-semibold no-underline shadow-sm border border-[#615BDB]/40 text-[#433389] hover:bg-[#615BDB]/10">
+            <Link
+              id="hero-existing-account"
+              href="/sign-in"
+              className="rounded-xl px-6 py-3 font-semibold no-underline shadow-sm border border-[#615BDB]/40 text-[#433389] hover:bg-[#615BDB]/10"
+            >
               I already have an account
             </Link>
           </div>
@@ -216,7 +237,7 @@ export default async function Page() {
           </div>
           {!stats.ok && (
             <p className="mt-2 text-center text-xs text-amber-700">
-              Stats unavailable. Debug: {JSON.stringify((stats as any)._debug)}
+              Stats unavailable.
             </p>
           )}
         </section>
@@ -255,13 +276,81 @@ export default async function Page() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="border-t border-white/20 bg-white/60 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-6 sm:flex-row">
-            <div className="font-semibold text-black/85">AI Tutor</div>
-            <p className="text-xs text-black/65">
-              © {new Date().getFullYear()} AI Tutor. All rights reserved.
-            </p>
+        {/* Footer — glossy gradient with contact + social + icon-only mark */}
+        <footer className="mt-4">
+          <div className="relative overflow-hidden">
+            <div className="bg-gradient-to-r from-[#615BDB] via-[#8B5CF6] to-[#06B6D4]">
+              <div className="mx-auto max-w-6xl px-6 py-10 text-white">
+                <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  <div>
+                    <h3 className="text-lg font-semibold">Get in touch</h3>
+                    <p className="mt-2 text-white/80">
+                      We’re here for parents and students across Ethiopia.
+                    </p>
+                    <div className="mt-4 space-y-2">
+                      <a href="tel:+251912345678" className="flex items-center gap-2 hover:opacity-90">
+                        <Phone className="size-4" />
+                        <span>+251 91 234 5678</span>
+                      </a>
+                      <a href="mailto:hello@aitutor.et" className="flex items-center gap-2 hover:opacity-90">
+                        <Mail className="size-4" />
+                        <span>hello@aitutor.et</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold">Follow us</h3>
+                    <div className="mt-4 flex items-center gap-3">
+                      <Link href="https://facebook.com/yourpage" className="rounded-md p-2 hover:bg-white/10">
+                        <Facebook className="size-5" />
+                      </Link>
+                      <Link href="https://x.com/yourpage" className="rounded-md p-2 hover:bg-white/10">
+                        <Twitter className="size-5" />
+                      </Link>
+                      <Link href="https://instagram.com/yourpage" className="rounded-md p-2 hover:bg-white/10">
+                        <Instagram className="size-5" />
+                      </Link>
+                      <Link href="https://youtube.com/@yourpage" className="rounded-md p-2 hover:bg-white/10">
+                        <Youtube className="size-5" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-xl bg-white/10 p-3 backdrop-blur">
+                      <Image
+                        src="/brand/logo-icon.png"
+                        alt="AI Tutor icon"
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold">AI Tutor Ethiopia</div>
+                      <div className="text-white/80">Made for Grades 1–12</div>
+                      <div className="mt-2 text-sm text-white/70">
+                        Addis Ababa • Amharic & English
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-10 border-t border-white/20 pt-6 text-sm text-white/70 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+                  <div>© {new Date().getFullYear()} AI Tutor Ethiopia. All rights reserved.</div>
+                  <div className="flex items-center gap-3">
+                    <Link href="/privacy" className="hover:opacity-90">
+                      Privacy
+                    </Link>
+                    <span className="opacity-60">•</span>
+                    <Link href="/terms" className="hover:opacity-90">
+                      Terms
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </footer>
       </main>
