@@ -645,27 +645,69 @@ function renderSVGFromSpec(subject: SubjectKey | null, spec: AnySpec) {
 }
 
 // -------------------------
-// Groq call helper
+// Groq call helper (hardened with model fallbacks)
 // -------------------------
 async function callGroq(messages: ChatMsg[], temperature: number, maxTokens: number) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return { ok: false, error: "Server is missing GROQ_API_KEY.", data: null as any };
+
+  // Prefer env-provided model, otherwise a CURRENT default, then safe fallbacks.
+  const primary =
+    (process.env.GROQ_CHAT_MODEL || process.env.GROQ_MODEL || "").trim() ||
+    "llama-3.3-70b-versatile";
+
+  // Order matters. We'll try these in sequence if the first fails due to deprecation/unsupported.
+  const candidates = Array.from(
+    new Set([
+      primary,
+      "llama-3.3-70b-versatile",
+      "llama-3.2-11b-text-preview",
+    ])
+  );
+
   const baseUrl = "https://api.groq.com/openai/v1/chat/completions";
-  const model = process.env.GROQ_CHAT_MODEL || "llama-3.1-70b-versatile";
 
-  const resp = await fetch(baseUrl, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages, temperature, max_tokens: maxTokens }),
-  });
+  let lastErr: any = null;
 
-  let data: any = null;
-  try { data = await resp.json(); } catch {}
-  if (!resp.ok) {
-    const msg = typeof data?.error?.message === "string" ? data.error.message : JSON.stringify(data);
-    return { ok: false, error: `Groq error: ${resp.status} ${msg}`, data };
+  for (const model of candidates) {
+    const resp = await fetch(baseUrl, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model, messages, temperature, max_tokens: maxTokens }),
+    });
+
+    let data: any = null;
+    try { data = await resp.json(); } catch { /* ignore parse error */ }
+
+    if (resp.ok) {
+      return { ok: true, error: null, data };
+    }
+
+    // Inspect error; continue to next model if this one is decommissioned/unsupported.
+    const msg = (typeof data?.error?.message === "string" ? data.error.message : JSON.stringify(data || {})).toLowerCase();
+    const status = resp.status;
+    const decom =
+      msg.includes("decommission") ||
+      msg.includes("no longer supported") ||
+      msg.includes("unknown model") ||
+      status === 400 || status === 410;
+
+    lastErr = `Groq error (${model}): ${resp.status} ${typeof data?.error?.message === "string" ? data.error.message : JSON.stringify(data)}`;
+
+    if (decom) {
+      // try next candidate
+      continue;
+    } else {
+      // Non-deprecation error: bail immediately with this error
+      return { ok: false, error: lastErr, data };
+    }
   }
-  return { ok: true, error: null, data };
+
+  return {
+    ok: false,
+    error: lastErr || "All Groq models failed.",
+    data: null as any,
+  };
 }
 
 // -------------------------------------------------
