@@ -1,6 +1,5 @@
 // src/lib/ai/provider.ts
-// Smart Diagram Engine: JSON -> deterministic SVG (graphs, blocks, concepts, parts, reactions, map)
-// Also: Explain, ELI5, Verify, Guided, strict no-fallback grounding, Amharic, sanitization.
+// Smart Diagram Engine + Study text modes with hardened Groq rotation (no env model required)
 
 type ChatMsg = { role: "system" | "user" | "assistant"; content: string };
 
@@ -33,9 +32,9 @@ type ProviderResult = {
   svg: string | null;
 };
 
-// -------------------------------------
-// Subject + mode prompt library (TEXT)
-// -------------------------------------
+/* -------------------------------------
+   Subject + mode prompt library (TEXT)
+------------------------------------- */
 type ModeKey = "explain" | "eli5" | "diagram" | "verify" | "guided";
 type SubjectKey =
   | "math"
@@ -262,9 +261,9 @@ const DEFAULTS: Record<ModeKey, string> = {
     "Provide guidance only for the exercise (no final answer). Use the specified structure and end with 'Stop here — no final answer on Study.'",
 };
 
-// -----------------------
-// Helpers & utilities
-// -----------------------
+/* -----------------------
+   Helpers & utilities
+----------------------- */
 function normalizeSubject(s?: string | null): SubjectKey | null {
   if (!s) return null;
   const key = s.trim().toLowerCase();
@@ -308,9 +307,9 @@ function redactFinalAnswers(text: string): string {
   return out;
 }
 
-// -----------------------------
-// Diagram JSON types & render
-// -----------------------------
+/* -----------------------------
+   Diagram JSON types & render
+----------------------------- */
 type DiagramSpecBase = { title: string; desc?: string; type?: string };
 
 type GraphSpec = DiagramSpecBase & {
@@ -335,7 +334,7 @@ type ConceptSpec = DiagramSpecBase & {
 
 type PartsSpec = DiagramSpecBase & {
   type: "parts";
-  figure?: string; // name of organ/object
+  figure?: string;
   parts: Array<{ id: string; label: string }>;
 };
 
@@ -343,7 +342,7 @@ type ReactionSpec = DiagramSpecBase & {
   type: "reaction";
   reactants: string[];
   products: string[];
-  equation?: string; // e.g., "2H₂ + O₂ → 2H₂O"
+  equation?: string;
 };
 
 type MapSpec = DiagramSpecBase & {
@@ -356,12 +355,11 @@ type AnySpec = GraphSpec | BlockSpec | ConceptSpec | PartsSpec | ReactionSpec | 
 
 // --- JSON extraction ---
 function extractJSONSpec(text: string): AnySpec | null {
-  // prefer fenced json
   const fence = text.match(/```json\s*([\s\S]*?)```/i);
   const raw = fence ? fence[1] : text.trim();
   try {
     const spec = JSON.parse(raw);
-    if (spec && spec.title) return spec as AnySpec;
+    if (spec && (spec as any).title) return spec as AnySpec;
   } catch { /* ignore */ }
   return null;
 }
@@ -411,16 +409,13 @@ function svgShell(inner: string, title: string, desc?: string) {
 </svg>`);
 }
 
-// ---------------- Graph renderer ----------------
+/* ---------------- Graph renderer ---------------- */
 function renderGraph(spec: GraphSpec) {
-  // Frame
   const left = MARGIN + 70, right = VBW - MARGIN - 20, bottom = VBH - MARGIN - 80, top = MARGIN + 20;
   const w = right - left, h = bottom - top;
 
-  // Axis labels
   const xLabel = esc(spec.axes.x || "x"), yLabel = esc(spec.axes.y || "y");
 
-  // Ranges
   const xMin = spec.axes.xMin ?? 0;
   const xMax = spec.axes.xMax ?? 10;
   const yMin = spec.axes.yMin ?? 0;
@@ -429,7 +424,6 @@ function renderGraph(spec: GraphSpec) {
   const sx = (x: number) => left + ((x - xMin) / (xMax - xMin)) * w;
   const sy = (y: number) => bottom - ((y - yMin) / (yMax - yMin)) * h;
 
-  // Grid & ticks (5 steps)
   const ticks = 5;
   const gridLines: string[] = [];
   const tickEls: string[] = [];
@@ -445,7 +439,6 @@ function renderGraph(spec: GraphSpec) {
     tickEls.push(`<text class="sub" x="${left-10}" y="${Y+4}" text-anchor="end">${Math.round(yi*100)/100}</text>`);
   }
 
-  // Axes
   const axes = `
     <line class="axis" x1="${left}" y1="${top}" x2="${left}" y2="${bottom}"/>
     <line class="axis" x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"/>
@@ -453,16 +446,13 @@ function renderGraph(spec: GraphSpec) {
     <text class="lbl" transform="translate(${left-46}, ${(top+bottom)/2}) rotate(-90)" text-anchor="middle">${yLabel}</text>
   `;
 
-  // Series
   const colors = ["#111827", "#1f2937", "#374151"];
   const seriesEls: string[] = [];
   (spec.lines || []).slice(0,3).forEach((ln, idx) => {
     let d = "";
     if (ln.shape === "linear" && (!ln.points || ln.points.length === 0)) {
-      // default linear from origin to (xMax, yMax*0.8)
       d = `M ${sx(xMin)} ${sy(yMin)} L ${sx(xMax)} ${sy(yMax*0.8)}`;
     } else if (ln.shape === "parabola" && (!ln.points || ln.points.length === 0)) {
-      // y = k x^2 scaled to box
       const steps = 40;
       const k = (yMax - yMin) / Math.pow((xMax - xMin), 2);
       for (let i=0;i<=steps;i++){
@@ -483,12 +473,10 @@ function renderGraph(spec: GraphSpec) {
     }
   });
 
-  // Annotations
   const notes = (spec.annotations || []).map(a =>
     `<text class="sub" x="${sx(a.x)}" y="${sy(a.y) - 8}" text-anchor="middle">${esc(a.text)}</text>`
   ).join("");
 
-  // Legend
   const leg = spec.legend && spec.legend.length ? spec.legend : ["Axes show units", "Line shows relation"];
   const legend = `
     <g transform="translate(${VBW - MARGIN - 200}, ${VBH - MARGIN - 110})">
@@ -508,11 +496,11 @@ function renderGraph(spec: GraphSpec) {
   return svgShell(inner, spec.title, spec.desc);
 }
 
-// --------------- Block / Concept ---------------
+/* --------------- Block / Concept --------------- */
 function wrapTspans(text: string, max = 22) {
   return wrapLines(text, max).map((ln,i)=>`<tspan x="12" dy="${i===0?0:16}">${esc(ln)}</tspan>`).join("");
 }
-function renderBlockOrConcept(spec: BlockSpec | ConceptSpec, subject: SubjectKey | null) {
+function renderBlockOrConcept(spec: BlockSpec | ConceptSpec, _subject: SubjectKey | null) {
   const nodes = (spec as any).nodes as { id:string; label:string }[];
   const edges = (spec as any).edges as { from:string; to:string; label?:string; kind?:string }[];
   const W=220,H=72,xL=120,xR=460, yStart=120,yStep=100;
@@ -553,9 +541,8 @@ function renderBlockOrConcept(spec: BlockSpec | ConceptSpec, subject: SubjectKey
   return svgShell(`${edgeEls}${nodeEls}${legend}`, spec.title, spec.desc);
 }
 
-// ----------------- Parts (labels) ----------------
+/* ----------------- Parts (labels) ---------------- */
 function renderParts(spec: PartsSpec) {
-  // Simple figure box left, labels right with leader lines
   const figX = MARGIN + 60, figY = MARGIN + 60, figW = 260, figH = 320;
   const labelsX = figX + figW + 60, labelsY = figY + 16, gap = 26;
 
@@ -580,7 +567,7 @@ function renderParts(spec: PartsSpec) {
   return svgShell(`${figure}${items}${legend}`, spec.title, spec.desc);
 }
 
-// ---------------- Reaction (Chem) ----------------
+/* ---------------- Reaction (Chem) ---------------- */
 function renderReaction(spec: ReactionSpec) {
   const leftX = MARGIN + 60, rightX = VBW - MARGIN - 260, y = VBH/2 - 40;
   const box = (x:number, text:string)=>`
@@ -603,7 +590,7 @@ function renderReaction(spec: ReactionSpec) {
   return svgShell(`${eqn}${react}${prod}${arrow}${legend}`, spec.title, spec.desc);
 }
 
-// ---------------- Map (schematic) ----------------
+/* ---------------- Map (schematic) ---------------- */
 function renderMap(spec: MapSpec) {
   const frameX=MARGIN+40, frameY=MARGIN+40, frameW=VBW-2*(MARGIN+40), frameH=VBH-2*(MARGIN+40);
   const frame = `<rect x="${frameX}" y="${frameY}" width="${frameW}" height="${frameH}" fill="none" stroke="#111827" stroke-width="2"/>`;
@@ -626,80 +613,127 @@ function renderMap(spec: MapSpec) {
   return svgShell(`${frame}${north}${scale}${labels}${legend}`, spec.title, spec.desc);
 }
 
-// ---------------- Renderer entry ----------------
+/* ---------------- Renderer entry ---------------- */
 function renderSVGFromSpec(subject: SubjectKey | null, spec: AnySpec) {
   if (spec.type === "graph") return renderGraph(spec as GraphSpec);
   if (spec.type === "block" || spec.type === "concept") return renderBlockOrConcept(spec as any, subject);
   if (spec.type === "parts") return renderParts(spec as PartsSpec);
   if (spec.type === "reaction") return renderReaction(spec as ReactionSpec);
   if (spec.type === "map") return renderMap(spec as MapSpec);
-  // Fallback: treat as simple block/concept
   const fallback: BlockSpec = {
     type: "block",
-    title: spec.title,
-    desc: spec.desc,
+    title: (spec as any).title,
+    desc: (spec as any).desc,
     nodes: [{id:"a",label:"Topic A"},{id:"b",label:"Topic B"}],
     edges: [{from:"a",to:"b",label:"Relation"}],
   };
   return renderBlockOrConcept(fallback, subject);
 }
 
-// -------------------------
-// Groq call helper (hardened with model fallbacks)
-// -------------------------
+/* -------------------------------------------------
+   Groq call helper — rotation, timeout, retries
+-------------------------------------------------- */
+function pickGroqCandidates(): string[] {
+  // If env provides a model and it's NOT a known-deprecated one, use it first.
+  const fromEnv = (process.env.GROQ_CHAT_MODEL || process.env.GROQ_MODEL || "").trim();
+  const bad = /llama[-_]3\.1[-_]70b[-_]versatile/i.test(fromEnv);
+  const primary = !bad && fromEnv ? fromEnv : null;
+
+  // Rotation list (ordered by quality/cost); exclude known-deprecated models
+  const rotation = [
+    "llama-3.3-70b-versatile",      // strong, general
+    "llama-3.1-8b-instant",         // fast, economical
+    "llama-3.2-11b-text-preview",   // text preview fallback
+  ];
+
+  const set = new Set<string>();
+  if (primary) set.add(primary);
+  rotation.forEach(m => set.add(m));
+  return Array.from(set);
+}
+
 async function callGroq(messages: ChatMsg[], temperature: number, maxTokens: number) {
   const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return { ok: false, error: "Server is missing GROQ_API_KEY.", data: null as any };
-
-  // Prefer env-provided model, otherwise a CURRENT default, then safe fallbacks.
-  const primary =
-    (process.env.GROQ_CHAT_MODEL || process.env.GROQ_MODEL || "").trim() ||
-    "llama-3.3-70b-versatile";
-
-  // Order matters. We'll try these in sequence if the first fails due to deprecation/unsupported.
-  const candidates = Array.from(
-    new Set([
-      primary,
-      "llama-3.3-70b-versatile",
-      "llama-3.2-11b-text-preview",
-    ])
-  );
+  if (!apiKey) {
+    return { ok: false, error: "Server is missing GROQ_API_KEY.", data: null as any };
+  }
 
   const baseUrl = "https://api.groq.com/openai/v1/chat/completions";
+  const candidates = pickGroqCandidates();
 
-  let lastErr: any = null;
+  const clamp = (n:number, lo:number, hi:number) => Math.max(lo, Math.min(hi, n));
+  const temp = clamp(Number.isFinite(temperature) ? temperature : 0.2, 0, 1);
+  const tokens = clamp(Number.isFinite(maxTokens) ? maxTokens : 900, 128, 4096);
+
+  const isDeprecation = (status: number, msg: string) => {
+    const m = msg.toLowerCase();
+    return (
+      status === 400 || status === 410 ||
+      m.includes("decommission") || m.includes("no longer supported") ||
+      m.includes("unknown model") || m.includes("not found: model")
+    );
+  };
+
+  let lastErr: string | null = null;
 
   for (const model of candidates) {
-    const resp = await fetch(baseUrl, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model, messages, temperature, max_tokens: maxTokens }),
-    });
+    // Up to 2 retries per candidate on 429/5xx with short backoff
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const ac = new AbortController();
+      const timeout = setTimeout(() => ac.abort(), 35_000); // 35s hard timeout
 
-    let data: any = null;
-    try { data = await resp.json(); } catch { /* ignore parse error */ }
+      let resp: Response;
+      let data: any = null;
+      try {
+        resp = await fetch(baseUrl, {
+          method: "POST",
+          signal: ac.signal,
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            temperature: temp,
+            max_tokens: tokens,
+          }),
+        });
+      } catch (e: any) {
+        clearTimeout(timeout);
+        lastErr = `Groq network error (${model}): ${String(e?.message || e)}`;
+        // retry once on network/timeout
+        await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+        continue;
+      }
+      clearTimeout(timeout);
 
-    if (resp.ok) {
-      return { ok: true, error: null, data };
-    }
+      try { data = await resp.json(); } catch { /* ignore parse error */ }
 
-    // Inspect error; continue to next model if this one is decommissioned/unsupported.
-    const msg = (typeof data?.error?.message === "string" ? data.error.message : JSON.stringify(data || {})).toLowerCase();
-    const status = resp.status;
-    const decom =
-      msg.includes("decommission") ||
-      msg.includes("no longer supported") ||
-      msg.includes("unknown model") ||
-      status === 400 || status === 410;
+      if (resp.ok) {
+        return { ok: true, error: null, data };
+      }
 
-    lastErr = `Groq error (${model}): ${resp.status} ${typeof data?.error?.message === "string" ? data.error.message : JSON.stringify(data)}`;
+      const msg = typeof data?.error?.message === "string"
+        ? data.error.message
+        : JSON.stringify(data || {});
 
-    if (decom) {
-      // try next candidate
-      continue;
-    } else {
-      // Non-deprecation error: bail immediately with this error
-      return { ok: false, error: lastErr, data };
+      // If deprecated/unsupported → try next model immediately
+      if (isDeprecation(resp.status, msg)) {
+        lastErr = `Groq error (${model}): ${resp.status} ${msg}`;
+        break; // go to next model
+      }
+
+      // Retry on 429/5xx once
+      if (resp.status === 429 || (resp.status >= 500 && resp.status <= 599)) {
+        lastErr = `Groq transient error (${model}): ${resp.status} ${msg}`;
+        await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+        continue;
+      }
+
+      // Non-retryable error → fail fast for this model
+      lastErr = `Groq error (${model}): ${resp.status} ${msg}`;
+      break;
     }
   }
 
@@ -710,9 +744,9 @@ async function callGroq(messages: ChatMsg[], temperature: number, maxTokens: num
   };
 }
 
-// -------------------------------------------------
-// Main entry
-// -------------------------------------------------
+/* -------------------------------------------------
+   Main entry
+-------------------------------------------------- */
 export async function chatWithProvider(args: ProviderArgs): Promise<ProviderResult> {
   const { mode, subject = null, grade = null, question, messages = [], context } = args;
 
@@ -746,7 +780,10 @@ export async function chatWithProvider(args: ProviderArgs): Promise<ProviderResu
 
   const groundingMsgs: ChatMsg[] = (context?.snippets || []).slice(0, 3).map((s, i) => ({
     role: "system" as const,
-    content: [`Context ${i + 1} — book:${s.bookId} page:${s.page}${s.title ? ` — ${s.title}` : ""}`, (s.excerpt || "").slice(0, 800)].join("\n"),
+    content: [
+      `Context ${i + 1} — book:${s.bookId} page:${s.page}${s.title ? ` — ${s.title}` : ""}`,
+      (s.excerpt || "").slice(0, 800),
+    ].join("\n"),
   }));
 
   const history: ChatMsg[] = Array.isArray(messages)
@@ -755,9 +792,8 @@ export async function chatWithProvider(args: ProviderArgs): Promise<ProviderResu
 
   const lastUser: ChatMsg = { role: "user", content: question || "" };
 
-  // ---------- DIAGRAM: ask for DIAGRAM SPEC JSON ----------
+  // ---------- DIAGRAM MODE ----------
   if (effectiveMode === "diagram") {
-    // Subject-smart hinting for the spec type
     const subjectHint =
       subjectKey === "physics" ? "If motion variables (distance, time, velocity, acceleration) appear, return a type:'graph' spec with axes and one or more lines (linear/parabola) and an annotation like 'Gradient = Acceleration'." :
       subjectKey === "math" ? "For functions (linear/quadratic), type:'graph' with axes and a line or curve. For shapes/relations, type:'concept' or 'block'." :
@@ -790,7 +826,6 @@ export async function chatWithProvider(args: ProviderArgs): Promise<ProviderResu
     const raw = String(call.data?.choices?.[0]?.message?.content ?? "");
     let spec = extractJSONSpec(raw);
 
-    // Physics auto-default if missing useful spec and context includes motion variables
     if (!spec && subjectKey === "physics") {
       const ctxTxt = (context?.snippets || []).map(s=> (s.excerpt||"").toLowerCase()).join(" ");
       const motion = /(velocity|speed|distance|displacement|time|acceleration)/i.test(ctxTxt);
