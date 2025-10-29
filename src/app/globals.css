@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../ui/theme/vars.css";
 
 /* -----------------------------------------------------------
    Design tokens (dark-first, safe defaults)
@@ -191,4 +192,40 @@ button:active,
 .text-muted { color: var(--muted); }
 
 /* Prevent accidental "white on white" for generic .bg-white */
-.bg-white { background-color: color-mix(in oklab, white 12%, transparent) !important; color: var(--fg) !important; }
+.bg-white { background-color: color-mix(in oklab, white 12%, transparent) !important; color: var(--fg) !important; } 
+
+/* ===========================================================
+   Micro-polish helpers (very subtle; layout-safe)
+   - CTA shimmer sweep
+   - Fade-in on paint for hero & stats
+=========================================================== */
+.btn-shimmer {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.btn-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.35) 12%, transparent 24%);
+  transform: translateX(-120%);
+  filter: blur(0.5px);
+  pointer-events: none;
+  animation: shimmer-sweep 6s ease-in-out infinite;
+}
+@keyframes shimmer-sweep {
+  0%, 75% { transform: translateX(-120%); opacity: 0; }
+  84% { opacity: .75; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+
+.fade-in-hero  { animation: fadeInSoft .7s ease-out both; }
+.fade-in-stats { animation: fadeInSoft 1s .15s ease-out both; }
+@keyframes fadeInSoft { from { opacity: 0 } to { opacity: 1 } }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-shimmer::after { animation: none !important; }
+  .fade-in-hero, .fade-in-stats { animation: none !important; }
+}

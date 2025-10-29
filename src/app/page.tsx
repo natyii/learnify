@@ -25,9 +25,9 @@ import {
   Instagram,
   Twitter,
   Youtube,
+  ChevronDown,
 } from "lucide-react";
 
-// Force runtime render on every request (needed for live Supabase stats)
 export const dynamic = "force-dynamic";
 
 /* ------------------------------------------------------------------
@@ -134,7 +134,7 @@ export default async function Page() {
         </div>
         <ParallaxDoodles />
 
-        {/* Keyframes */}
+        {/* Keyframes + local CSS */}
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -146,14 +146,113 @@ export default async function Page() {
                 from { transform: translateY(0); }
                 to { transform: translateY(calc(-1.1em * var(--digit))); }
               }
+
+              /* Spotlight Carousel (3 slides, 6s each = 18s loop) */
+              @keyframes slideFade {
+                0%   { opacity: 0; transform: translateY(8px); }
+                8%   { opacity: 1; transform: translateY(0); }
+                28%  { opacity: 1; transform: translateY(0); }
+                33%  { opacity: 0; transform: translateY(-4px); }
+                100% { opacity: 0; transform: translateY(-4px); }
+              }
+              .hero-carousel { position: relative; isolation: isolate; }
+              .hero-carousel .slide {
+                position: absolute; inset: 0;
+                opacity: 0;
+                will-change: opacity, transform;
+                animation: slideFade 18s ease-in-out infinite;
+              }
+              .hero-carousel .slide.slide-1 { animation-delay: 0s; }
+              .hero-carousel .slide.slide-2 { animation-delay: 6s; }
+              .hero-carousel .slide.slide-3 { animation-delay: 12s; }
+              .hero-carousel:hover .slide,
+              .hero-carousel:focus-within .slide { animation-play-state: paused; }
+
+              .hero-accent {
+                background-image: linear-gradient(90deg,#3aa6ff,#74ffd6,#3aa6ff);
+                background-size: 200% 100%;
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+                filter: drop-shadow(0 8px 26px rgba(80,200,255,0.35));
+                animation: accentSweep 1800ms ease-in-out infinite;
+                animation-delay: 300ms;
+              }
+              @keyframes accentSweep {
+                0%   { background-position: 0% 50%; }
+                50%  { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+              }
+
+              .hero-size-guard { min-height: 210px; }
+
+              @keyframes fadeInSoft { from { opacity: 0 } to { opacity: 1 } }
+              .scroll-cue { animation: fadeInSoft .8s .2s ease-out both; }
+
+              .nav-glow:focus-visible {
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(97,91,219,0.5);
+                transition: box-shadow .2s ease;
+              }
+
+              /* ===== Footer gradient motion (violet/blue -> black) ===== */
+              @keyframes panGradients {
+                0%   { background-position: 5% 60%, 85% 35%, 50% 50%; }
+                50%  { background-position: 20% 40%, 70% 55%, 50% 50%; }
+                100% { background-position: 35% 25%, 55% 70%, 50% 50%; }
+              }
+              .footer-wrap { position: relative; overflow: hidden; background: #000; color: #fff; isolation: isolate; }
+              .footer-sheen {
+                position: absolute; inset: 0; z-index: -1;
+                background:
+                  radial-gradient(70% 90% at 10% 70%, rgba(97,91,219,0.80) 0%, rgba(97,91,219,0.12) 48%, transparent 75%),
+                  radial-gradient(75% 95% at 85% 30%, rgba(67,51,137,0.70) 0%, rgba(67,51,137,0.10) 52%, transparent 78%),
+                  linear-gradient(180deg, #0b0f19 0%, #0a0e1a 55%, #000000 100%);
+                background-repeat: no-repeat;
+                background-size: 180% 180%, 180% 180%, 100% 100%;
+                animation: panGradients 28s ease-in-out infinite alternate;
+                filter: saturate(1.05);
+              }
+              .footer-wrap .content { position: relative; }
+
+              /* ===== Hero glossy card ===== */
+              .hero-card {
+                position: relative;
+                border-radius: 28px;
+                background: rgba(255,255,255,0.68);
+                backdrop-filter: saturate(150%) blur(18px);
+                -webkit-backdrop-filter: saturate(150%) blur(18px);
+                border: 1px solid rgba(255,255,255,0.35);
+                box-shadow:
+                  0 30px 80px rgba(0,0,0,0.18),
+                  inset 0 1px 0 rgba(255,255,255,0.55);
+              }
+              .hero-card::before {
+                content:"";
+                position:absolute; inset: -1px;
+                border-radius: 30px;
+                pointer-events:none;
+                background:
+                  linear-gradient(180deg, rgba(255,255,255,0.65), rgba(255,255,255,0) 40%),
+                  linear-gradient(90deg, rgba(97,91,219,0.18), rgba(6,182,212,0.0));
+                mask: linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
+                -webkit-mask: linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
+                padding: 1px;
+              }
+
+              @media (prefers-reduced-motion: reduce) {
+                .hero-carousel .slide { animation: none !important; opacity: 0; transform: none; }
+                .hero-carousel .slide.slide-1 { opacity: 1; }
+                .hero-accent { animation: none !important; }
+                .footer-sheen { animation: none !important; }
+              }
             `,
           }}
         />
 
-        {/* Header — same height/blur; logo on the left */}
+        {/* Header */}
         <header className="sticky top-0 z-50 border-b border-black/10 bg-white/70 backdrop-blur-xl">
           <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 h-[72px]">
-            {/* Logo (slightly smaller than previous) */}
             <Link href="/" className="flex items-center -my-8">
               <Image
                 src="/brand/logo-text.png"
@@ -165,29 +264,28 @@ export default async function Page() {
               />
             </Link>
 
-            {/* Nav on the right (unchanged) */}
             <nav className="relative flex items-center gap-3">
               <a
                 href="#features"
-                className="rounded-full border border-[#615BDB]/40 px-3 py-2 text-sm text-[#433389] hover:bg-[#615BDB]/10"
+                className="nav-glow rounded-full border border-[#615BDB]/40 px-3 py-2 text-sm text-[#433389] hover:bg-[#615BDB]/10"
               >
                 Features
               </a>
               <a
                 href="#faq"
-                className="rounded-full border border-[#615BDB]/40 px-3 py-2 text-sm text-[#433389] hover:bg-[#615BDB]/10"
+                className="nav-glow rounded-full border border-[#615BDB]/40 px-3 py-2 text-sm text-[#433389] hover:bg-[#615BDB]/10"
               >
                 FAQ
               </a>
               <Link
                 href="/sign-in"
-                className="rounded-full border border-[#615BDB]/30 bg-[#615BDB]/10 px-4 py-2 text-sm font-medium text-[#433389] hover:bg-[#615BDB]/20"
+                className="nav-glow rounded-full border border-[#615BDB]/30 bg-[#615BDB]/10 px-4 py-2 text-sm font-medium text-[#433389] hover:bg-[#615BDB]/20"
               >
                 Sign in
               </Link>
               <Link
                 href="/sign-up"
-                className="rounded-full border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(67,51,137,0.35)] hover:brightness-110"
+                className="nav-glow rounded-full border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(67,51,137,0.35)] hover:brightness-110"
               >
                 Get started
               </Link>
@@ -195,74 +293,143 @@ export default async function Page() {
           </div>
         </header>
 
-        {/* Hero */}
+        {/* Hero — wrapped in glossy card */}
         <section className="relative mx-auto max-w-3xl px-6 pb-12 pt-6 text-center">
-          <div className="pointer-events-none absolute inset-x-0 top-3 -z-10 mx-auto h-[260px] max-w-3xl rounded-3xl border border-white/30 bg-white/65 backdrop-blur-xl shadow-[0_30px_80px_rgba(0,0,0,0.18)]" />
-          <h1 className="mx-auto max-w-[22ch] text-5xl md:text-6xl font-semibold leading-tight text-transparent bg-clip-text bg-[linear-gradient(180deg,#0e172a_0%,#1c3356_25%,#3aa6ff_58%,#74ffd6_100%)] drop-shadow-[0_8px_26px_rgba(80,200,255,0.35)]">
-            Smarter study, grounded in your textbook.
-          </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-[15px] text-black/75">
-            Grade-aware library, grounded Study Chat with page citations,
-            homework help with steps, generated quizzes, and meaningful progress tracking.
-          </p>
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/sign-up"
-              className="rounded-xl border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-6 py-3 font-semibold text-white shadow-[0_12px_28px_rgba(67,51,137,0.35)] hover:brightness-110"
-            >
-              Create free account
-            </Link>
-            <Link
-              id="hero-existing-account"
-              href="/sign-in"
-              className="rounded-xl px-6 py-3 font-semibold no-underline shadow-sm border border-[#615BDB]/40 text-[#433389] hover:bg-[#615BDB]/10"
-            >
-              I already have an account
-            </Link>
+          <div className="hero-card mx-auto max-w-3xl px-6 py-8 md:px-10 md:py-10">
+            <div className="hero-carousel hero-size-guard">
+              {/* Slide 1 */}
+              <div className="slide slide-1">
+                <h1 className="mx-auto max-w-[22ch] text-5xl md:text-6xl font-semibold leading-tight text-[#0e172a]">
+                  Smarter study, grounded in <span className="hero-accent">your textbook</span>.
+                </h1>
+                <p className="mx-auto mt-4 max-w-2xl text-[15px] text-black/75">
+                  Grade-aware library, grounded Study Chat with page citations, homework help with steps,
+                  generated quizzes, and meaningful progress tracking.
+                </p>
+              </div>
+
+              {/* Slide 2 */}
+              <div className="slide slide-2">
+                <h1 className="mx-auto max-w-[22ch] text-5xl md:text-6xl font-semibold leading-tight text-[#0e172a]">
+                  Learn faster, one <span className="hero-accent">verified</span> page at a time.
+                </h1>
+                <p className="mx-auto mt-4 max-w-2xl text-[15px] text-black/75">
+                  Every answer cites the exact textbook page — clarity you can trust.
+                </p>
+              </div>
+
+              {/* Slide 3 */}
+              <div className="slide slide-3">
+                <h1 className="mx-auto max-w-[22ch] text-5xl md:text-6xl font-semibold leading-tight text-[#0e172a]">
+                  Homework help that actually <span className="hero-accent">explains</span>.
+                </h1>
+                <p className="mx-auto mt-4 max-w-2xl text-[15px] text-black/75">
+                  Explain • Steps • Hints • Check — not just answers, real understanding.
+                </p>
+              </div>
+            </div>
+
+            {/* CTA row */}
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/sign-up"
+                className="btn-shimmer rounded-xl border border-transparent bg-[linear-gradient(180deg,#615BDB_0%,#433389_100%)] px-6 py-3 font-semibold text-white shadow-[0_12px_28px_rgba(67,51,137,0.35)] hover:brightness-110"
+              >
+                Create free account
+              </Link>
+              <Link
+                id="hero-existing-account"
+                href="/sign-in"
+                className="rounded-xl px-6 py-3 font-semibold no-underline shadow-sm border border-[#615BDB]/40 text-[#433389] hover:bg-[#615BDB]/10"
+              >
+                I already have an account
+              </Link>
+            </div>
+
+            <ul className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-black/65">
+              <li>• Works offline after first load</li>
+              <li>• Contrast & keyboard friendly</li>
+              <li>• Mobile-first</li>
+            </ul>
           </div>
-          <ul className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-black/65">
-            <li>• Works offline after first load</li>
-            <li>• Contrast & keyboard friendly</li>
-            <li>• Mobile-first</li>
-          </ul>
+
+          {/* Scroll cue */}
+          <div className="mt-8 flex justify-center">
+            <a
+              href="#features"
+              className="scroll-cue inline-flex items-center gap-2 rounded-full border border-[#615BDB]/30 bg-white/60 px-3 py-1.5 text-xs text-[#433389] backdrop-blur-md transition hover:bg-white/80 hover:translate-y-0.5"
+            >
+              <ChevronDown className="h-4 w-4" />
+              <span>Explore features</span>
+            </a>
+          </div>
         </section>
 
         {/* Live Stats */}
         <section className="mx-auto max-w-6xl px-6 pb-16">
-          <div className="mb-3 text-center text-sm font-medium text-[#433389]">Live usage</div>
+          <div className="mb-3 text-center text-sm font-medium text-[#433389]">
+            Live usage
+          </div>
           <div className="grid gap-4 sm:grid-cols-3">
-            <StatCard icon={<BookOpen className="h-5 w-5" />} label="Textbooks in library" value={stats.textbooks} gradient="from-[#06B6D4] to-[#433389]" />
-            <StatCard icon={<ClipboardCheck className="h-5 w-5" />} label="Quizzes taken" value={stats.attempts} gradient="from-[#433389] to-[#06B6D4]" />
-            <StatCard icon={<Users className="h-5 w-5" />} label="Total users" value={stats.users} gradient="from-[#615BDB] to-[#433389]" />
+            <StatCard
+              icon={<BookOpen className="h-5 w-5" />}
+              label="Textbooks in library"
+              value={stats.textbooks}
+              gradient="from-[#06B6D4] to-[#433389]"
+            />
+            <StatCard
+              icon={<ClipboardCheck className="h-5 w-5" />}
+              label="Quizzes taken"
+              value={stats.attempts}
+              gradient="from-[#433389] to-[#06B6D4]"
+            />
+            <StatCard
+              icon={<Users className="h-5 w-5" />}
+              label="Total users"
+              value={stats.users}
+              gradient="from-[#615BDB] to-[#433389]"
+            />
           </div>
           {!stats.ok && (
-            <p className="mt-2 text-center text-xs text-amber-700">
-              Stats unavailable.
-            </p>
+            <p className="mt-2 text-center text-xs text-amber-700">Stats unavailable.</p>
           )}
         </section>
 
         {/* Features */}
         <section id="features" className="mx-auto max-w-6xl px-6 pb-20">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard icon={<BookOpenCheck className="h-5 w-5" />} title="Library by grade" toneIndex={0}>
-              Official textbooks; signed links keep storage private.
-            </FeatureCard>
-            <FeatureCard icon={<MessagesSquare className="h-5 w-5" />} title="Study Chat (grounded)" toneIndex={1}>
-              3–5 textbook snippets per answer. “Sources: pNN…”
-            </FeatureCard>
-            <FeatureCard icon={<PencilRuler className="h-5 w-5" />} title="Homework help" toneIndex={2}>
-              Explain • Steps • Hints • Check. Logged for review.
-            </FeatureCard>
-            <FeatureCard icon={<GraduationCap className="h-5 w-5" />} title="Quizzes" toneIndex={3}>
-              Auto-generated MCQs, instant scoring, attempt history.
-            </FeatureCard>
-            <FeatureCard icon={<ChartBar className="h-5 w-5" />} title="Progress" toneIndex={4}>
-              Study minutes + homework logs; accessible charts.
-            </FeatureCard>
-            <FeatureCard icon={<ShieldCheck className="h-5 w-5" />} title="Built for schools" toneIndex={1}>
-              Grade-aware, high contrast, keyboardable; Groq now, OpenAI later.
-            </FeatureCard>
+            {[BookOpenCheck, MessagesSquare, PencilRuler, GraduationCap, ChartBar, ShieldCheck].map(
+              (Icon, i) => (
+                <div
+                  key={i}
+                  className="transition-transform duration-200 will-change-transform hover:-translate-y-0.5 md:hover:-translate-y-1"
+                >
+                  <FeatureCard
+                    icon={<Icon className="h-5 w-5" />}
+                    title={[
+                      "Library by grade",
+                      "Study Chat (grounded)",
+                      "Homework help",
+                      "Quizzes",
+                      "Progress",
+                      "Built for schools",
+                    ][i]}
+                    toneIndex={i}
+                  >
+                    {
+                      [
+                        "Official textbooks; signed links keep storage private.",
+                        "3–5 textbook snippets per answer. “Sources: pNN…”",
+                        "Explain • Steps • Hints • Check. Logged for review.",
+                        "Auto-generated MCQs, instant scoring, attempt history.",
+                        "Study minutes + homework logs; accessible charts.",
+                        "Grade-aware, high contrast, keyboardable; Groq now, OpenAI later.",
+                      ][i]
+                    }
+                  </FeatureCard>
+                </div>
+              )
+            )}
           </div>
         </section>
 
@@ -270,18 +437,40 @@ export default async function Page() {
         <section id="faq" className="mx-auto max-w-3xl px-6 pb-24 text-center">
           <h2 className="mb-4 text-2xl font-semibold text-black">Frequently asked</h2>
           <div className="space-y-3 text-left">
-            <FAQItem q="Works without internet?" a="After first load, the PWA shell and previously opened textbooks continue to work offline. Chat/search need connectivity." />
-            <FAQItem q="Are answers reliable?" a="Yes. We fetch top textbook snippets via RPC and include page numbers with every answer. If sources are insufficient, we say so." />
-            <FAQItem q="Supported grades?" a="Grades 1–12 for Library; all features are grade-aware. National exam prep (G6/G8/G12) is next." />
+            <FAQItem
+              q="Works without internet?"
+              a="After first load, the PWA shell and previously opened textbooks continue to work offline. Chat/search need connectivity."
+            />
+            <FAQItem
+              q="Are answers reliable?"
+              a="Yes. We fetch top textbook snippets via RPC and include page numbers with every answer. If sources are insufficient, we say so."
+            />
+            <FAQItem
+              q="Supported grades?"
+              a="Grades 1–12 for Library; all features are grade-aware. National exam prep (G6/G8/G12) is next."
+            />
           </div>
         </section>
 
-        {/* Footer — glossy gradient with contact + social + icon-only mark */}
+        {/* Footer — smooth brand violet/blue to black, big icon on the left */}
         <footer className="mt-4">
-          <div className="relative overflow-hidden">
-            <div className="bg-gradient-to-r from-[#615BDB] via-[#8B5CF6] to-[#06B6D4]">
+          <div className="footer-wrap">
+            <div className="footer-sheen" />
+            <div className="content">
               <div className="mx-auto max-w-6xl px-6 py-10 text-white">
                 <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  {/* Big icon only (LEFT) */}
+                  <div className="flex items-center">
+                    <Image
+                      src="/brand/logo-icon.png"
+                      alt="AI Tutor icon"
+                      width={256}
+                      height={256}
+                      className="h-24 w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 select-none"
+                    />
+                  </div>
+
+                  {/* Contact */}
                   <div>
                     <h3 className="text-lg font-semibold">Get in touch</h3>
                     <p className="mt-2 text-white/80">
@@ -299,6 +488,7 @@ export default async function Page() {
                     </div>
                   </div>
 
+                  {/* Socials */}
                   <div>
                     <h3 className="text-lg font-semibold">Follow us</h3>
                     <div className="mt-4 flex items-center gap-3">
@@ -316,37 +506,14 @@ export default async function Page() {
                       </Link>
                     </div>
                   </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-xl bg-white/10 p-3 backdrop-blur">
-                      <Image
-                        src="/brand/logo-icon.png"
-                        alt="AI Tutor icon"
-                        width={40}
-                        height={40}
-                        className="h-10 w-10 rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold">AI Tutor Ethiopia</div>
-                      <div className="text-white/80">Made for Grades 1–12</div>
-                      <div className="mt-2 text-sm text-white/70">
-                        Addis Ababa • Amharic & English
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
                 <div className="mt-10 border-t border-white/20 pt-6 text-sm text-white/70 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
                   <div>© {new Date().getFullYear()} AI Tutor Ethiopia. All rights reserved.</div>
                   <div className="flex items-center gap-3">
-                    <Link href="/privacy" className="hover:opacity-90">
-                      Privacy
-                    </Link>
+                    <Link href="/privacy" className="hover:opacity-90">Privacy</Link>
                     <span className="opacity-60">•</span>
-                    <Link href="/terms" className="hover:opacity-90">
-                      Terms
-                    </Link>
+                    <Link href="/terms" className="hover:opacity-90">Terms</Link>
                   </div>
                 </div>
               </div>

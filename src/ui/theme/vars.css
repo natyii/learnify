@@ -1,0 +1,38 @@
+:root {
+  /* Base */
+  --ink: #0f172a;
+  --ink-muted: #475569;
+  --paper: #fff7df;
+  --paper-dots: rgba(0,0,0,.06);
+  --paper-lines: rgba(0,84,201,.18);
+  --paper-margin: rgba(255,59,48,.26);
+
+  /* Brand accents */
+  --neon: #7C8CFF;
+  --plasma: #32E6B7;
+  --amber: #FFB14E;
+  --iris: #8B5CF6;
+
+  /* Shared UI */
+  --card-bg: rgba(255,255,255,.78);
+  --card-border: rgba(0,0,0,.10);
+  --halo: linear-gradient(120deg, rgba(124,140,255,.2), rgba(50,230,183,.18));
+  --shimmer: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #E6E8F0;
+    --ink-muted: #9AA3B2;
+    --paper: #0f1220;
+    --paper-dots: rgba(255,255,255,.06);
+    --paper-lines: rgba(124,140,255,.14);
+    --paper-margin: rgba(255,92,92,.3);
+    --card-bg: rgba(17,20,37,.72);
+    --card-border: rgba(255,255,255,.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
