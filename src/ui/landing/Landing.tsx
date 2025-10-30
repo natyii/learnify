@@ -509,13 +509,13 @@ export default async function Landing({ locale }: { locale: string }) {
                       {tx("footer.contactText", "We’re here for parents and students across Ethiopia.")}
                     </p>
                     <div className="mt-4 space-y-2">
-                      <a href="tel:+251912345678" className="flex items-center gap-2 hover:opacity-90">
+                      <a href="tel:+251913572555" className="flex items-center gap-2 hover:opacity-90">
                         <Phone className="size-4" />
-                        <span>+251 91 234 5678</span>
+                        <span>+251 91 357 2555</span>
                       </a>
-                      <a href="mailto:hello@aitutor.et" className="flex items-center gap-2 hover:opacity-90">
+                      <a href="mailto:hello@learnify.et" className="flex items-center gap-2 hover:opacity-90">
                         <Mail className="size-4" />
-                        <span>hello@aitutor.et</span>
+                        <span>hello@learnify.et</span>
                       </a>
                     </div>
                   </div>
