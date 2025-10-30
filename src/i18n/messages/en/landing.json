@@ -1,0 +1,51 @@
+{
+  "nav": {
+    "features": "Features",
+    "faq": "FAQ",
+    "signIn": "Sign in",
+    "getStarted": "Get started"
+  },
+  "hero": {
+    "slide1Title": "Smarter study, grounded in your textbook.",
+    "slide1Subtitle": "Grade-aware library, grounded Study Chat with page citations, homework help with steps, generated quizzes, and meaningful progress tracking.",
+    "slide2Title": "Learn faster, one verified page at a time.",
+    "slide2Subtitle": "Every answer cites the exact textbook page — clarity you can trust.",
+    "slide3Title": "Homework help that actually explains.",
+    "slide3Subtitle": "Explain • Steps • Hints • Check — not just answers, real understanding.",
+    "ctaPrimary": "Create free account",
+    "ctaSecondary": "I already have an account",
+    "explore": "Explore features"
+  },
+  "stats": {
+    "heading": "Live usage",
+    "textbooks": "Textbooks in library",
+    "attempts": "Quizzes taken",
+    "users": "Total users",
+    "unavailable": "Stats unavailable."
+  },
+  "features": {
+    "f1": { "title": "Library by grade", "desc": "Official textbooks; signed links keep storage private." },
+    "f2": { "title": "Study Chat (grounded)", "desc": "3–5 textbook snippets per answer. “Sources: pNN…”" },
+    "f3": { "title": "Homework help", "desc": "Explain • Steps • Hints • Check. Logged for review." },
+    "f4": { "title": "Quizzes", "desc": "Auto-generated MCQs, instant scoring, attempt history." },
+    "f5": { "title": "Progress", "desc": "Study minutes + homework logs; accessible charts." },
+    "f6": { "title": "Built for schools", "desc": "Grade-aware, high contrast, keyboardable; Groq now, OpenAI later." }
+  },
+  "faq": {
+    "heading": "Frequently asked",
+    "q1": "Works without internet?",
+    "a1": "After first load, the PWA shell and previously opened textbooks continue to work offline. Chat/search need connectivity.",
+    "q2": "Are answers reliable?",
+    "a2": "Yes. We fetch top textbook snippets via RPC and include page numbers with every answer. If sources are insufficient, we say so.",
+    "q3": "Supported grades?",
+    "a3": "Grades 1–12 for Library; all features are grade-aware. National exam prep (G6/G8/G12) is next."
+  },
+  "footer": {
+    "contactHeading": "Get in touch",
+    "contactText": "We’re here for parents and students across Ethiopia.",
+    "followHeading": "Follow us",
+    "rights": "All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "nav": {
+    "features": "Amaloota",
+    "faq": "Gaafiiwwan",
+    "signIn": "Seeni",
+    "getStarted": "Jalqabi"
+  },
+  "hero": {
+    "slide1Title": "Barnoota kitaabaan bu’uureffame, madaallii caalaa.",
+    "slide1Subtitle": "Laa’ibiraarii sadarkaa kutaa, Study Chat sirrii, deeggarsa mindaa hojii, fi qormaata uumamaa.",
+    "slide2Title": "Itti si’a, fuula mirkanaa’e tokkon baradhu.",
+    "slide2Subtitle": "Deebiin hundi lakkoofsa fuula kitaabaa ni agarsiisa — iftoomina amanamtu.",
+    "slide3Title": "Deeggarsi tajaajila maatii hiika sirrii kenna.",
+    "slide3Subtitle": "Hiikuu • Tarkaanfii • Tuma • Mirkaneessa — deebii qofa miti, hubannoo.",
+    "ctaPrimary": "Herrega bilisaa banu",
+    "ctaSecondary": "Herrega qaba",
+    "explore": "Amaloota ilaali"
+  },
+  "stats": {
+    "heading": "Tajaajila yeroo-dhabii",
+    "textbooks": "Kitaabota laa’ibiraarii",
+    "attempts": "Qormaata fudhataman",
+    "users": "Fayyadamtoota waliigalaa",
+    "unavailable": "Lakkoofsotni hin jiru."
+  },
+  "features": {
+    "f1": { "title": "Laa’ibiraarii sadarkaa kutaa", "desc": "Kitaabota seeraa-qabeessa; qunnamsi isaa eyyama-kabajaa." },
+    "f2": { "title": "Study Chat (kitaabaan bu’uureffame)", "desc": "Deebii kessaa 3–5 kutaa fuulaa. “Madda: pNN…”" },
+    "f3": { "title": "Deeggarsa mindaa hojii", "desc": "Hiikuu • Tarkaanfii • Tuma • Mirkaneessa; galmaa’a." },
+    "f4": { "title": "Qormaata", "desc": "MCQ uumamaa, madaallii saffisaa, seenaa carraa." },
+    "f5": { "title": "Imala barnootaa", "desc": "Daqiiqaalee barnootaa + galmee mindaa; tartiiba agarsiisu." },
+    "f6": { "title": "Mana barumsaaaf", "desc": "Kutaa-beekamaa, kontraasti ol’aanaa, sarara keyboard." }
+  },
+  "faq": {
+    "heading": "Gaafiiwwan yeroo baay’ee",
+    "q1": "Internetiin ala ni hojjetaa?",
+    "a1": "Erga yeroo jalqabaatti fe’amee booda PWA fi kitaabni duraan banuun offline ni hojjetu. Chat/zochtuu interneeta barbaadu.",
+    "q2": "Deebiin amanamaa dha?",
+    "a2": "Eeyyee. Kutaa fuulaa filatamaa RPC’n fidna; lakkoofsaan ni tarreessina. Yoo madda gahaa hin jirre ni himna.",
+    "q3": "Sadarkaan kutaa eenyu fa’a?",
+    "a3": "Kutaa 1–12; amaloonni hundi kutaa-beekamaa dha. Qopheessaa qormaata biyyaalessaa itti aansee ni dabalama."
+  },
+  "footer": {
+    "contactHeading": "Nu quunnamaa",
+    "contactText": "Warra haadha-abbaa fi ijoollee Itoophiyaa maraaf jirra.",
+    "followHeading": "Nu hordofaa",
+    "rights": "Mirgi hundi eeggamaa dha.",
+    "privacy": "Qajeelfama dhuunfawaa",
+    "terms": "Heera tajaajilaa"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "landing": {
+    "hero": {
+      "title": "Learn the right way",
+      "subtitle": "An AI tutor aligned to Ethiopian curriculum"
+    },
+    "cta": {
+      "primary": "Start learning",
+      "secondary": "Browse textbooks"
+    }
+  }
+}
